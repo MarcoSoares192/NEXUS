@@ -81,7 +81,7 @@ const TABLE_MAP = {
     fromDb: (r) => ({
       id:r.id, processoNumero: processoNumeroDe(r.processo_id), empresa: empresaCodigoDe(r.empresa_id),
       vencimento:r.vencimento, fornecedor:r.fornecedor, centroCusto:r.centro_custo, valor:r.valor,
-      dataPagamento:r.data_pagamento, despesaId:r.despesa_id,
+      dataPagamento:r.data_pagamento, despesaId:r.despesa_id, despAdmId:r.desp_adm_id,
     }),
   },
   despAdm: {
@@ -150,4 +150,29 @@ async function sincronizarContaAPagarDaDespesa(despesa){
   } else if(existente){
     await sb.from('contas_pagar').delete().eq('id', existente.id);
   }
+}
+
+// Despesas Administrativas: "pendente" = ainda sem data de pagamento preenchida.
+async function sincronizarContaAPagarDoDespAdm(despAdm){
+  const precisaCAP = !despAdm.dataPagamento;
+  const { data: existente } = await sb.from('contas_pagar').select('*').eq('desp_adm_id', despAdm.id).maybeSingle();
+  if(precisaCAP){
+    const row = {
+      desp_adm_id: despAdm.id, empresa_id: null, processo_id: null,
+      vencimento: dOrNull(despAdm.data), fornecedor: despAdm.beneficiario || despAdm.categoria,
+      centro_custo: 'DESPESA ADMINISTRATIVA', valor: nOrNull(despAdm.valor) || 0, data_pagamento: null,
+    };
+    if(existente) await sb.from('contas_pagar').update(row).eq('id', existente.id);
+    else await sb.from('contas_pagar').insert(row);
+  } else if(existente){
+    await sb.from('contas_pagar').delete().eq('id', existente.id);
+  }
+}
+
+// Roda no boot: garante que Contas a Pagar reflita o estado atual de Despesas e
+// Despesas Administrativas, mesmo para registros lançados fora do app (ex.: via SQL Editor).
+async function reconciliarContasAPagar(){
+  for(const d of state.despesas) await sincronizarContaAPagarDaDespesa(d);
+  for(const da of state.despAdm) await sincronizarContaAPagarDoDespAdm(da);
+  state.contasPagar = await dbListar('contasPagar');
 }

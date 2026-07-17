@@ -19,3 +19,6 @@ create policy configuracoes_authenticated_all on configuracoes
 -- ============================================================
 alter table contas_pagar add column despesa_id uuid references despesas(id) on delete cascade;
 create index idx_cap_despesa on contas_pagar(despesa_id);
+
+alter table contas_pagar add column desp_adm_id uuid references desp_adm(id) on delete cascade;
+create index idx_cap_desp_adm on contas_pagar(desp_adm_id);

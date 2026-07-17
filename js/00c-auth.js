@@ -43,6 +43,7 @@ async function iniciarApp(){
   app.innerHTML = `<div style="width:100%;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#9aa4bd;">Carregando dados...</div>`;
   try{
     await carregarTudoDoBanco();
+    await reconciliarContasAPagar();
     render();
   }catch(e){
     app.innerHTML = `<div style="width:100%;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#991b1b;padding:20px;text-align:center;">Erro ao carregar dados do banco: ${esc(e.message)}</div>`;

@@ -78,21 +78,22 @@ async function salvarModal(){
   const btn = document.querySelector('#modalForm button[type="submit"]');
   if(btn){ btn.disabled = true; btn.textContent = 'Salvando...'; }
   try{
+    let salvo;
     if(id){
-      const atualizado = await dbAtualizar(tabela, id, novo);
+      salvo = await dbAtualizar(tabela, id, novo);
       const idx = state[tabela].findIndex(r=>r.id===id);
-      state[tabela][idx] = atualizado;
-      if(tabela==='despesas'){
-        await sincronizarContaAPagarDaDespesa(atualizado);
-        state.contasPagar = await dbListar('contasPagar');
-      }
+      state[tabela][idx] = salvo;
     } else {
-      const criado = await dbInserir(tabela, novo);
-      state[tabela].push(criado);
-      if(tabela==='despesas'){
-        await sincronizarContaAPagarDaDespesa(criado);
-        state.contasPagar = await dbListar('contasPagar');
-      }
+      salvo = await dbInserir(tabela, novo);
+      state[tabela].push(salvo);
+    }
+    if(tabela==='despesas'){
+      await sincronizarContaAPagarDaDespesa(salvo);
+      state.contasPagar = await dbListar('contasPagar');
+    }
+    if(tabela==='despAdm'){
+      await sincronizarContaAPagarDoDespAdm(salvo);
+      state.contasPagar = await dbListar('contasPagar');
     }
     closeModal();
   }catch(e){
@@ -109,6 +110,9 @@ async function excluirLinha(tabela, id){
     if(tabela==='despesas'){
       // a exclusão da despesa já cai em cascata no banco (contas_pagar.despesa_id)
       state.contasPagar = state.contasPagar.filter(r=>r.despesaId!==id);
+    }
+    if(tabela==='despAdm'){
+      state.contasPagar = state.contasPagar.filter(r=>r.despAdmId!==id);
     }
     render();
   }catch(e){
@@ -219,7 +223,7 @@ const TABLE_DEFS = {
     ]
   },
   contasPagar: {
-    titulo:'Título a Pagar', subtitulo:'Alimentado automaticamente pelas Despesas cujo pagamento não é no mesmo dia do lançamento. Quando a Despesa é marcada como "Pago", o título some daqui sozinho. Use "+ Novo registro" só para exceções não vinculadas a uma despesa.',
+    titulo:'Título a Pagar', subtitulo:'Alimentado automaticamente pelas Despesas (quando o pagamento não é no mesmo dia do lançamento) e pelas Despesas Administrativas em aberto. Quando o status vira "Pago" (ou a data de pagamento é preenchida), o título some daqui sozinho. Use "+ Novo registro" só para exceções não vinculadas a nenhum dos dois.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo', type:'processoSelect'},
       {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS},

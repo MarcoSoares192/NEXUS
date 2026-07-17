@@ -426,6 +426,11 @@ function buildCotacaoDocumentoHTML(c){
     table.itens th{background:#f3f4f6;border:1px solid #111;padding:6px;font-size:9.5px;text-transform:uppercase;}
     table.itens td{border:1px solid #111;padding:6px;font-size:10.5px;height:20px;}
     .totalFatura{background:#dbeafe;font-weight:800;font-size:13px;}
+    table.totais{width:100%;height:100%;border-collapse:collapse;}
+    table.totais td{padding:7px 10px;border-bottom:1px solid #d1d5db;font-size:10.5px;}
+    table.totais td.v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+    table.totais tr:last-child td{border-bottom:none;}
+    table.totais tr.total td{background:#dbeafe;font-weight:800;font-size:12.5px;border-top:2px solid #111;}
     .logo{font-weight:800;font-size:22px;letter-spacing:.5px;}
     .logo span{color:#4f7cff;}
     .tagline{font-size:9px;color:#666;}
@@ -449,16 +454,21 @@ function buildCotacaoDocumentoHTML(c){
         <div class="cell" style="flex:1;text-align:right;">
           ${perfil.logoDataUrl
             ? `<img src="${perfil.logoDataUrl}" alt="${esc(perfil.nomeCompleto||c.empresa)}" class="doc-logo">`
-            : `<div class="logo">${esc(c.empresa)} <span>GROUP TRADING</span></div><div class="tagline">Connecting the world</div>`}
+            : (c.empresa==='NEXUS' && typeof LOGO_NEXUS_DATA_URL!=='undefined')
+              ? `<img src="${LOGO_NEXUS_DATA_URL}" alt="Nexus Group Trading" class="doc-logo">`
+              : `<div class="logo">${esc(c.empresa)} <span>GROUP TRADING</span></div><div class="tagline">Connecting the world</div>`}
         </div>
       </div>
       <div class="row">
         <div class="cell" style="flex:1;"><div class="lbl">Proforma Invoice</div></div>
-        <div class="cell" style="flex:1;text-align:right;"><div class="lbl">Nº</div><div class="val" style="font-weight:700;">${esc(c.codigo)}</div></div>
+        <div class="cell" style="flex:1;text-align:right;">
+          <div class="lbl">Nº</div><div class="val" style="font-weight:700;">${esc(c.codigo)}</div>
+          <div class="lbl" style="margin-top:6px;">Data</div><div class="val">${fmtDate(c.data)}</div>
+        </div>
       </div>
       <div class="row">
-        <div class="cell" style="flex:1;"><div class="lbl">Data</div><div class="val">${fmtDate(c.data)}</div>
-          <div class="lbl" style="margin-top:6px;">Consignatário</div><div class="val" style="white-space:pre-line;">${esc(c.consignatarioTxt||clienteNome(c.clienteId))}</div>
+        <div class="cell" style="flex:1.4;">
+          <div class="lbl">Consignatário</div><div class="val" style="white-space:pre-line;">${esc(c.consignatarioTxt||clienteNome(c.clienteId))}</div>
         </div>
         <div class="cell" style="flex:1;">
           <div class="lbl">Origem</div><div class="val">${esc(c.origem)}</div>
@@ -483,20 +493,21 @@ function buildCotacaoDocumentoHTML(c){
     <div class="doc" style="margin-top:10px;">
       <div class="row">
         <div class="cell" style="flex:1;">
-          <div class="lbl">Frete Internacional</div><div class="val">${fmtCot(c.freteInternacional,c.moeda)}</div>
-          <div class="lbl" style="margin-top:6px;">Despesas Logísticas</div><div class="val">${fmtCot(c.despesasLogisticas,c.moeda)}</div>
-          <div class="lbl" style="margin-top:6px;">Seguro</div><div class="val">${fmtCot(c.seguro,c.moeda)}</div>
-          <div class="lbl" style="margin-top:6px;">Modal</div><div class="val">${esc(c.modal)}</div>
+          <div class="lbl">Modal</div><div class="val">${esc(c.modal)}</div>
           <div class="lbl" style="margin-top:6px;">AOD Origem</div><div class="val">${esc(c.aodOrigem)}</div>
-          <div class="lbl" style="margin-top:6px;">Cia / Transportadora</div><div class="val">${esc(c.ciaTransporte)}</div>
-        </div>
-        <div class="cell" style="flex:1;">
-          <div class="lbl">Valor Total Itens</div><div class="val">${fmtCot(t.valorItens,c.moeda)}</div>
-          <div class="lbl" style="margin-top:6px;">Valor Total Frete</div><div class="val">${fmtCot(t.valorFrete,c.moeda)}</div>
-          <div class="lbl" style="margin-top:6px;">Desconto</div><div class="val">${fmtCot(c.desconto,c.moeda)}</div>
           <div class="lbl" style="margin-top:6px;">AOD Destino</div><div class="val">${esc(c.aodDestino)}</div>
-          <div class="lbl" style="margin-top:6px;">TT</div><div class="val">${esc(c.tt)}</div>
-          <div class="lbl totalFatura" style="margin-top:10px;padding:8px;border-radius:4px;">VALOR TOTAL FATURA: ${fmtCot(t.valorFatura,c.moeda)}</div>
+          <div class="lbl" style="margin-top:6px;">Cia / Transportadora</div><div class="val">${esc(c.ciaTransporte)}</div>
+          <div class="lbl" style="margin-top:6px;">TT (Tempo de Trânsito)</div><div class="val">${esc(c.tt)}</div>
+        </div>
+        <div class="cell" style="flex:1.2;padding:0;">
+          <table class="totais">
+            <tr><td>Valor Total Itens</td><td class="v">${fmtCot(t.valorItens,c.moeda)}</td></tr>
+            <tr><td>Frete Internacional</td><td class="v">${fmtCot(c.freteInternacional,c.moeda)}</td></tr>
+            <tr><td>Despesas Logísticas</td><td class="v">${fmtCot(c.despesasLogisticas,c.moeda)}</td></tr>
+            <tr><td>Seguro</td><td class="v">${fmtCot(c.seguro,c.moeda)}</td></tr>
+            <tr><td>Desconto</td><td class="v">− ${fmtCot(c.desconto,c.moeda)}</td></tr>
+            <tr class="total"><td>VALOR TOTAL FATURA</td><td class="v">${fmtCot(t.valorFatura,c.moeda)}</td></tr>
+          </table>
         </div>
       </div>
       <div class="row">
