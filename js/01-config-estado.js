@@ -38,6 +38,7 @@ let ui = {
   empresaAba: 'NEXUS',
 };
 let itensRows = [];
+let rascunhoCotacaoPrefill = null;
 
 // ---------- carga inicial: busca tudo do Supabase e monta `state` ----------
 async function carregarTudoDoBanco(){

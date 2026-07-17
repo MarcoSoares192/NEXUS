@@ -26,7 +26,7 @@ function renderDashboard(){
   const emAberto = processos.filter(p=>p.statusRecebimento!=='Recebido Total').reduce((s,p)=>{ const f=procValorFechCambioRS(p); return s+(f||0); },0);
   const emAbertoCount = processos.filter(p=>p.statusRecebimento==='Pendente'||p.statusRecebimento==='Recebido Parcial').length;
   const hoje = parseDate(todayISO());
-  const em7dias = processos.filter(p=>{ if(!p.dataProntidao) return false; const d=parseDate(p.dataProntidao); const diff=daysBetween(d,hoje); return diff<=0 && diff>=-7; });
+  const em7dias = processos.filter(p=>{ if(!p.dataProntidao) return false; const d=parseDate(p.dataProntidao); const diff=daysBetween(d,hoje); return diff>=0 && diff<=7; });
   const totalAReceber7d = em7dias.reduce((s,p)=>s+(procAReceberEstUSD(p)||0),0);
 
   // agrupar por cliente
@@ -40,7 +40,18 @@ function renderDashboard(){
   if(ui.dashClienteFiltro!=='TODOS') clientesArr = clientesArr.filter(c=>c.cliente===ui.dashClienteFiltro);
   clientesArr.sort((a,b)=>b.receita-a.receita);
 
+  const despesasPagas = porEmpresa(state.despesas).filter(d=>d.status==='Pago');
+  const totalDespesasPagas = despesasPagas.reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  const pagamentosPorMes = Array(12).fill(0);
+  despesasPagas.forEach(d=>{
+    if(!d.dataPagamento) return;
+    const dt = parseDate(d.dataPagamento);
+    if(!dt || dt.getFullYear()!==ui.fluxoAno) return;
+    pagamentosPorMes[dt.getMonth()] += Number(d.valorPago)||0;
+  });
+
   setTimeout(()=>desenharGraficosDashboard(fluxo), 0);
+  setTimeout(()=>desenharChartPagamentos(pagamentosPorMes), 0);
 
   return `
   <div class="grid grid-5">
@@ -55,6 +66,12 @@ function renderDashboard(){
   <div class="grid grid-2">
     <div class="card"><canvas id="chartRecebimentos" height="160"></canvas></div>
     <div class="card"><canvas id="chartSaldo" height="160"></canvas></div>
+  </div>
+
+  <div class="section-title">Pagamentos</div>
+  <div class="grid grid-2">
+    ${kpiCard('Total de Despesas Pagas', fmtMoney(totalDespesasPagas), `${despesasPagas.length} despesa(s) paga(s)`, 'var(--green)')}
+    <div class="card"><canvas id="chartPagamentosMes" height="140"></canvas></div>
   </div>
 
   <div class="section-title">Detalhamento por Cliente</div>
@@ -99,7 +116,7 @@ function kpiCard(label, value, sub, color){
     <div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub}</div></div>`;
 }
 
-let chartRecebimentosRef=null, chartSaldoRef=null;
+let chartRecebimentosRef=null, chartSaldoRef=null, chartPagamentosRef=null;
 function desenharGraficosDashboard(fluxo){
   const c1 = document.getElementById('chartRecebimentos');
   const c2 = document.getElementById('chartSaldo');
@@ -110,4 +127,12 @@ function desenharGraficosDashboard(fluxo){
     options:{ plugins:{legend:{display:true, labels:{boxWidth:10,font:{size:11}}}, title:{display:true,text:'Recebimentos mensais',font:{size:12}}}, scales:{y:{beginAtZero:true}} } });
   chartSaldoRef = new Chart(c2, { type:'line', data:{ labels: fluxo.map(m=>m.label), datasets:[{ label:'Saldo final de caixa (R$)', data: fluxo.map(m=>m.saldoFinal), borderColor:'#22d3ee', backgroundColor:'rgba(34,211,238,.15)', fill:true, tension:.3 }] },
     options:{ plugins:{legend:{display:true, labels:{boxWidth:10,font:{size:11}}}, title:{display:true,text:'Evolução do saldo de caixa',font:{size:12}}} } });
+}
+
+function desenharChartPagamentos(porMes){
+  const c = document.getElementById('chartPagamentosMes');
+  if(!c) return;
+  if(chartPagamentosRef) chartPagamentosRef.destroy();
+  chartPagamentosRef = new Chart(c, { type:'bar', data:{ labels: MESES, datasets:[{ label:'Despesas pagas (R$)', data: porMes, backgroundColor:'#f59e0b' }] },
+    options:{ plugins:{legend:{display:false}, title:{display:true,text:'Despesas pagas por mês — '+ui.fluxoAno,font:{size:12}}}, scales:{y:{beginAtZero:true}} } });
 }

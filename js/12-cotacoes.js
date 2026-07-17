@@ -87,6 +87,7 @@ function renderCotacoesLista(){
 
 function abrirNovaCotacao(){
   itensRows = [blankItem()];
+  rascunhoCotacaoPrefill = null;
   ui.cotacaoEditId = 'new';
   render();
 }
@@ -96,7 +97,30 @@ function abrirEditarCotacao(id){
   ui.cotacaoEditId = id;
   render();
 }
-function cancelarCotacao(){ ui.cotacaoEditId = null; itensRows = []; render(); }
+function cancelarCotacao(){ ui.cotacaoEditId = null; itensRows = []; rascunhoCotacaoPrefill = null; render(); }
+
+// Botão "Gerar Invoice" na aba Processos: reaproveita o mesmo formulário da Proforma.
+// Se o processo já tiver uma cotação vinculada, abre ela para edição; caso contrário,
+// abre um rascunho de nova cotação pré-preenchido com os dados do processo.
+function gerarInvoiceDoProcesso(processoId){
+  const p = state.processos.find(x=>x.id===processoId);
+  if(!p) return;
+  ui.modulo = 'cotacoes';
+  const existente = state.cotacoes.find(c => c.processoGerado === p.numero);
+  if(existente){
+    abrirEditarCotacao(existente.id);
+    return;
+  }
+  rascunhoCotacaoPrefill = {
+    empresa: p.empresa, data: todayISO(), clienteId: p.clienteId, moeda: p.moeda || 'USD',
+    observacoes: p.obs || '', status: 'Convertida em Venda', processoGerado: p.numero,
+  };
+  itensRows = [ p.descricao
+    ? { descricao:p.descricao, disponibilidade:'', ncm:'', qtd:1, unidade:'UN', precoUnitario: p.valorMoeda||'' }
+    : blankItem() ];
+  ui.cotacaoEditId = 'new';
+  render();
+}
 
 function campo(label, inputHtml, obrigatorio){
   return `<div class="field"><label>${label}${obrigatorio?' *':''}</label>${inputHtml}</div>`;
@@ -120,17 +144,18 @@ function selectCliente(id, value){
 
 function renderCotacaoForm(){
   const isNew = ui.cotacaoEditId==='new';
-  const c = isNew ? {
+  const c = isNew ? Object.assign({
     empresa:'NEXUS', data: todayISO(), clienteId:'', consignatarioTxt:'', origem:'', destino:'', volumes:'', pesoBruto:'',
     incoterm:'', dimensoes:'', moeda:'USD', freteInternacional:'', despesasLogisticas:'', seguro:'', desconto:'',
     modal:'AÉREO', aodOrigem:'', aodDestino:'', ciaTransporte:'', tt:'', termosPagamento:'100% ANTECIPADO', observacoes:'',
     responsavelNome:'', responsavelCargo:'', status:'Em aberto',
-  } : state.cotacoes.find(x=>x.id===ui.cotacaoEditId);
+  }, rascunhoCotacaoPrefill || {}) : state.cotacoes.find(x=>x.id===ui.cotacaoEditId);
   const salvo = !isNew;
   const perfil = state.empresasPerfil[c.empresa] || {};
 
   return `
   <div style="margin-bottom:14px;"><button class="btn btn-ghost btn-sm" onclick="cancelarCotacao()">‹ Voltar para lista</button></div>
+  ${isNew && rascunhoCotacaoPrefill && rascunhoCotacaoPrefill.processoGerado ? `<div class="hint" style="margin-bottom:12px;">Gerando Invoice a partir do processo <b>${esc(rascunhoCotacaoPrefill.processoGerado)}</b>. Confira/complete os dados abaixo e clique em Salvar.</div>` : ''}
   <div class="card" style="margin-bottom:16px;">
     <div class="section-title" style="margin-top:0;">Identificação ${salvo? '— <span class="mono">'+esc(c.codigo)+'</span>' : '(código gerado ao salvar)'}</div>
     <div class="grid grid-3">
@@ -328,9 +353,12 @@ async function salvarCotacao(){
     if(isNew){
       codigo = await nextCotacaoCodigo(empresa, data);
       registro.codigo = codigo;
-      const { data: inserida, error } = await sb.from('cotacoes').insert(COTACAO_TO_DB(registro)).select().single();
+      processoGerado = (rascunhoCotacaoPrefill && rascunhoCotacaoPrefill.processoGerado) || null;
+      const dbRow = COTACAO_TO_DB(registro);
+      if(processoGerado) dbRow.processo_gerado_id = processoIdDe(processoGerado);
+      const { data: inserida, error } = await sb.from('cotacoes').insert(dbRow).select().single();
       if(error) throw error;
-      cotacaoId = inserida.id; processoGerado = null;
+      cotacaoId = inserida.id;
     } else {
       cotacaoId = ui.cotacaoEditId;
       const existente = state.cotacoes.find(x=>x.id===cotacaoId);
@@ -347,7 +375,7 @@ async function salvarCotacao(){
     const salva = { id:cotacaoId, codigo, ...registro, itens: itensLimpos.map(({ordem, ...rest})=>rest), processoGerado };
     if(isNew){ state.cotacoes.push(salva); }
     else { const idx = state.cotacoes.findIndex(x=>x.id===cotacaoId); state.cotacoes[idx] = salva; }
-    ui.cotacaoEditId = null; itensRows = [];
+    ui.cotacaoEditId = null; itensRows = []; rascunhoCotacaoPrefill = null;
     render();
   }catch(e){
     alert('Erro ao salvar cotação: ' + e.message);

@@ -23,7 +23,16 @@ function renderContasPagar(){
     { label:'Dias Atraso', render: r => { const v=capDiasAtraso(r); return v===null?'—': v; } },
     { label:'Status', render: r => badge(capStatus(r), capStatusBadge(capStatus(r))) },
   ];
-  return renderCrudTable('contasPagar', extras);
+  const linhas = porEmpresa(state.contasPagar);
+  const abertas = linhas.filter(r=>!r.dataPagamento);
+  const totalAberto = abertas.reduce((s,r)=>s+(Number(r.valor)||0),0);
+  return `
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    ${kpiCard('Contas em Aberto', abertas.length, `de ${linhas.length} título(s) no total`, 'var(--amber)')}
+    ${kpiCard('Valor Total a Pagar', fmtMoney(totalAberto), '', 'var(--accent)')}
+  </div>
+  ${renderCrudTable('contasPagar', extras)}
+  `;
 }
 
 function renderDespAdm(){
