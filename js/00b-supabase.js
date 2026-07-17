@@ -81,7 +81,7 @@ const TABLE_MAP = {
     fromDb: (r) => ({
       id:r.id, processoNumero: processoNumeroDe(r.processo_id), empresa: empresaCodigoDe(r.empresa_id),
       vencimento:r.vencimento, fornecedor:r.fornecedor, centroCusto:r.centro_custo, valor:r.valor,
-      dataPagamento:r.data_pagamento,
+      dataPagamento:r.data_pagamento, despesaId:r.despesa_id,
     }),
   },
   despAdm: {
@@ -129,4 +129,25 @@ async function dbListar(tabela){
   const { data, error } = await sb.from(map.db).select('*').order('created_at', { ascending:true });
   if(error) throw error;
   return data.map(map.fromDb);
+}
+
+// ---------- Regra: Despesas alimenta Contas a Pagar automaticamente ----------
+// Se a despesa não é paga no mesmo dia (dataPagamento vazia ou diferente da data
+// de lançamento) e ainda não está com status "Pago", ela precisa aparecer em
+// Contas a Pagar. Quando o status vira "Pago" (ou é paga no mesmo dia), o
+// registro espelhado é removido de Contas a Pagar automaticamente.
+async function sincronizarContaAPagarDaDespesa(despesa){
+  const precisaCAP = despesa.status !== 'Pago' && (!despesa.dataPagamento || despesa.dataPagamento !== despesa.data);
+  const { data: existente } = await sb.from('contas_pagar').select('*').eq('despesa_id', despesa.id).maybeSingle();
+  if(precisaCAP){
+    const row = {
+      despesa_id: despesa.id, empresa_id: empresaIdDe(despesa.empresa), processo_id: processoIdDe(despesa.processoNumero),
+      vencimento: dOrNull(despesa.dataVencimento), fornecedor: despesa.fornecedor, centro_custo: dOrNull(despesa.centroCusto),
+      valor: nOrNull(despesa.valorPago) || 0, data_pagamento: dOrNull(despesa.dataPagamento),
+    };
+    if(existente) await sb.from('contas_pagar').update(row).eq('id', existente.id);
+    else await sb.from('contas_pagar').insert(row);
+  } else if(existente){
+    await sb.from('contas_pagar').delete().eq('id', existente.id);
+  }
 }

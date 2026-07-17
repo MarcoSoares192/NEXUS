@@ -82,9 +82,17 @@ async function salvarModal(){
       const atualizado = await dbAtualizar(tabela, id, novo);
       const idx = state[tabela].findIndex(r=>r.id===id);
       state[tabela][idx] = atualizado;
+      if(tabela==='despesas'){
+        await sincronizarContaAPagarDaDespesa(atualizado);
+        state.contasPagar = await dbListar('contasPagar');
+      }
     } else {
       const criado = await dbInserir(tabela, novo);
       state[tabela].push(criado);
+      if(tabela==='despesas'){
+        await sincronizarContaAPagarDaDespesa(criado);
+        state.contasPagar = await dbListar('contasPagar');
+      }
     }
     closeModal();
   }catch(e){
@@ -98,6 +106,10 @@ async function excluirLinha(tabela, id){
   try{
     await dbExcluir(tabela, id);
     state[tabela] = state[tabela].filter(r=>r.id!==id);
+    if(tabela==='despesas'){
+      // a exclusão da despesa já cai em cascata no banco (contas_pagar.despesa_id)
+      state.contasPagar = state.contasPagar.filter(r=>r.despesaId!==id);
+    }
     render();
   }catch(e){
     alert('Erro ao excluir no banco: ' + e.message);
@@ -207,7 +219,7 @@ const TABLE_DEFS = {
     ]
   },
   contasPagar: {
-    titulo:'Título a Pagar', subtitulo:'Títulos de fornecedores pendentes. Status e dias de atraso calculados automaticamente.',
+    titulo:'Título a Pagar', subtitulo:'Alimentado automaticamente pelas Despesas cujo pagamento não é no mesmo dia do lançamento. Quando a Despesa é marcada como "Pago", o título some daqui sozinho. Use "+ Novo registro" só para exceções não vinculadas a uma despesa.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo', type:'processoSelect'},
       {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS},

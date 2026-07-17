@@ -13,3 +13,9 @@ insert into configuracoes (id, saldo_inicial_ano) values (1, 0);
 alter table configuracoes enable row level security;
 create policy configuracoes_authenticated_all on configuracoes
   for all to authenticated using (true) with check (true);
+
+-- ============================================================
+-- Vínculo automático Despesas -> Contas a Pagar
+-- ============================================================
+alter table contas_pagar add column despesa_id uuid references despesas(id) on delete cascade;
+create index idx_cap_despesa on contas_pagar(despesa_id);
