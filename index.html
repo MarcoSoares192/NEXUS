@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus ERP</title>
+<link rel="stylesheet" href="css/app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- Assets (logo embutido em base64) -->
+<script src="js/00-assets.js"></script>
+
+<!-- Conexão com o banco (Supabase) -->
+<script src="js/00b-supabase.js"></script>
+
+<!-- Base: configuração, estado e cálculos -->
+<script src="js/01-config-estado.js"></script>
+<script src="js/02-calculos.js"></script>
+
+<!-- Camada de aplicação: layout/rotas e motor de CRUD -->
+<script src="js/03-layout.js"></script>
+<script src="js/04-crud.js"></script>
+
+<!-- Módulos (na ordem em que aparecem no menu) -->
+<script src="js/05-dashboard.js"></script>
+<script src="js/06-clientes-processos-despesas.js"></script>
+<script src="js/07-resultado.js"></script>
+<script src="js/08-financeiro.js"></script>
+<script src="js/09-fluxo-dre.js"></script>
+<script src="js/10-cobranca.js"></script>
+<script src="js/11-checklists.js"></script>
+<script src="js/12-cotacoes.js"></script>
+<script src="js/13-empresas.js"></script>
+
+<!-- Dados de demonstração / exportar / limpar -->
+<script src="js/14-demo-import-export.js"></script>
+
+<!-- Autenticação + inicialização (deve ser o último a carregar) -->
+<script src="js/00c-auth.js"></script>
+<script src="js/15-init.js"></script>
+</body>
+</html>
