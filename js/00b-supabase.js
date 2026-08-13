@@ -185,12 +185,13 @@ async function reconciliarContasAReceber(){
 // Processo pendente/parcial: o Valor NEXUS aparece automaticamente em Contas a Receber
 // (título "VALOR NEXUS (auto)"). Some sozinho quando o processo é dado como recebido.
 async function sincronizarContaAReceberDoProcesso(p){
-  const precisaCAR = (p.statusRecebimento==='Pendente' || p.statusRecebimento==='Recebido Parcial') && p.valorNexus;
+  const valorParaCAR = p.valorNexus || p.valorMoeda;
+  const precisaCAR = (p.statusRecebimento==='Pendente' || p.statusRecebimento==='Recebido Parcial') && valorParaCAR;
   const { data: existente } = await sb.from('contas_receber').select('*').eq('processo_id', p.id).eq('ref','VALOR NEXUS (auto)').maybeSingle();
   if(precisaCAR){
     const row = {
       processo_id: p.id, empresa_id: empresaIdDe('NEXUS'), cliente_id: p.clienteId || null,
-      ref: 'VALOR NEXUS (auto)', moeda: 'USD', valor: nOrNull(p.valorNexus) || 0,
+      ref: 'VALOR NEXUS (auto)', moeda: 'USD', valor: nOrNull(valorParaCAR) || 0,
       vencimento: dOrNull(p.dataEmbarque || p.dataProntidao),
     };
     if(existente) await sb.from('contas_receber').update(row).eq('id', existente.id);

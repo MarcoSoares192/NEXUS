@@ -189,7 +189,7 @@ function renderCrudTable(tabela, colunasExtras){
   return `
   <div class="hint">${def.subtitulo||''}</div>
   <div style="margin-bottom:14px;"><button class="btn btn-primary" onclick="openModal('${tabela}')">+ Novo registro</button></div>
-  <div class="table-wrap"><table>
+  <div class="table-wrap"><table class="${def.primeiraColunaFixa ? 'table-frozen-first' : ''}">
     <thead><tr>
       ${colunas.map(c=>`<th>${c.label}</th>`).join('')}
       ${(colunasExtras||[]).map(c=>`<th>${c.label}</th>`).join('')}
@@ -198,7 +198,7 @@ function renderCrudTable(tabela, colunasExtras){
     <tbody>
       ${linhas.map(r=>`
         <tr class="${def.linhaClass ? def.linhaClass(r) : ''}">
-          ${colunas.map(c=>`<td class="${c.alertaSeVazio && !r[c.key] ? 'cell-alert' : ''}">${formatCellValue(c, r[c.key], r)}</td>`).join('')}
+          ${colunas.map(c=>`<td class="${(c.alertaSeVazio && !r[c.key]) || (c.alertaSe && c.alertaSe(r)) ? 'cell-alert' : ''}">${formatCellValue(c, r[c.key], r)}</td>`).join('')}
           ${(colunasExtras||[]).map(c=>`<td>${c.render(r)}</td>`).join('')}
           <td>
             <button class="btn btn-ghost btn-sm" onclick="openModal('${tabela}','${r.id}')">Editar</button>
@@ -234,8 +234,8 @@ const TABLE_DEFS = {
     ]
   },
   processos: {
-    titulo:'Processo', subtitulo:'Cadastro de processos — câmbio, prontidão de carga e status de recebimento. Linha em vermelho = status Pendente/Recebido Parcial (o Valor NEXUS vai automaticamente para Contas a Receber). Célula em vermelho = câmbio ainda não fechado.',
-    linhaClass: r => (r.statusRecebimento==='Pendente' || r.statusRecebimento==='Recebido Parcial') ? 'row-alert' : '',
+    titulo:'Processo', subtitulo:'Cadastro de processos — câmbio, prontidão de carga e status de recebimento. Data Fech. Câmbio e Status Recebimento ficam em vermelho quando o recebimento está Pendente/Parcial — e o Valor NEXUS vai automaticamente para Contas a Receber nesse caso.',
+    primeiraColunaFixa: true,
     colunas:[
       {key:'numero', label:'Nº Processo', type:'text', obrigatorio:true},
       {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS, obrigatorio:true},
@@ -248,8 +248,10 @@ const TABLE_DEFS = {
       {key:'valorMoeda', label:'Valor Moeda Estrang.', type:'moeda', moedaSimbolo:''},
       {key:'valorNexus', label:'Valor NEXUS (US$)', type:'moeda', moedaSimbolo:'US$'},
       {key:'taxaCambio', label:'Taxa Câmbio', type:'number'},
-      {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date', alertaSeVazio:true},
-      {key:'statusRecebimento', label:'Status Recebimento', type:'select', options:STATUS_RECEBIMENTO_PROC},
+      {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date',
+        alertaSe: r => r.statusRecebimento==='Pendente' || r.statusRecebimento==='Recebido Parcial'},
+      {key:'statusRecebimento', label:'Status Recebimento', type:'select', options:STATUS_RECEBIMENTO_PROC,
+        alertaSe: r => r.statusRecebimento==='Pendente' || r.statusRecebimento==='Recebido Parcial'},
       {key:'obs', label:'Observações', type:'textarea'},
     ]
   },

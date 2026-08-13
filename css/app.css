@@ -99,3 +99,9 @@ tbody tr:hover{background:#f9fafb;}
 tr.row-alert td{background:#fef2f2!important;}
 tr.row-alert td:first-child{border-left:3px solid #dc2626;}
 td.cell-alert{background:#fee2e2!important;color:#b91c1c;font-weight:700;}
+
+/* Coluna congelada (ex.: Nº Processo) ao rolar a tabela pra direita */
+.table-frozen-first th:first-child, .table-frozen-first td:first-child{
+  position:sticky; left:0; z-index:2; background:#fff; box-shadow:2px 0 4px rgba(0,0,0,.06);
+}
+.table-frozen-first thead th:first-child{ z-index:3; background:#f9fafb; }
