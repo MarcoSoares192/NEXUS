@@ -155,6 +155,9 @@ async function excluirLinha(tabela, id){
     }
     await dbExcluir(tabelaReal, id);
     state[tabelaReal] = state[tabelaReal].filter(r=>r.id!==id);
+    if(tabelaReal==='processos'){
+      state.cotacoes = state.cotacoes.map(c => (c.processoGerado && !state.processos.find(p=>p.numero===c.processoGerado)) ? {...c, processoGerado:null} : c);
+    }
     if(tabelaReal==='despesas'){
       // a exclusão da despesa já cai em cascata no banco (contas_pagar.despesa_id)
       state.contasPagar = state.contasPagar.filter(r=>r.despesaId!==id);
@@ -172,12 +175,54 @@ async function excluirLinha(tabela, id){
   }
 }
 
+let uiFiltros = {}; // { tabela: { colKey: valor } }
+
+function aplicarFiltroColuna(tabela, key, valor){
+  (uiFiltros[tabela] ||= {})[key] = valor;
+  render();
+}
+function limparFiltrosColuna(tabela){
+  uiFiltros[tabela] = {};
+  render();
+}
+function linhasComFiltro(tabela, colunas, linhas){
+  const filtros = uiFiltros[tabela] || {};
+  const ativos = Object.keys(filtros).filter(k=>filtros[k]);
+  if(!ativos.length) return linhas;
+  return linhas.filter(r => ativos.every(key=>{
+    const c = colunas.find(x=>x.key===key);
+    const f = filtros[key];
+    if(!c) return true;
+    if(c.type==='select' || c.type==='clienteSelect') return String(r[key]||'')===f;
+    return String(r[key]||'').toLowerCase().includes(f.toLowerCase());
+  }));
+}
+function renderFiltroCelula(tabela, c, linhasBase){
+  const atual = (uiFiltros[tabela] && uiFiltros[tabela][c.key]) || '';
+  if(c.type==='select'){
+    const valores = [...new Set(linhasBase.map(r=>r[c.key]).filter(v=>v))].sort();
+    return `<select onchange="aplicarFiltroColuna('${tabela}','${c.key}',this.value)" class="filtro-input">
+      <option value="">Todos</option>
+      ${valores.map(v=>`<option value="${esc(v)}" ${atual===v?'selected':''}>${esc(v)}</option>`).join('')}
+    </select>`;
+  }
+  if(c.type==='clienteSelect'){
+    const ids = [...new Set(linhasBase.map(r=>r[c.key]).filter(v=>v))];
+    const comNome = ids.map(id=>({id, nome:clienteNome(id)})).sort((a,b)=>a.nome.localeCompare(b.nome));
+    return `<select onchange="aplicarFiltroColuna('${tabela}','${c.key}',this.value)" class="filtro-input">
+      <option value="">Todos</option>
+      ${comNome.map(o=>`<option value="${o.id}" ${atual===o.id?'selected':''}>${esc(o.nome)}</option>`).join('')}
+    </select>`;
+  }
+  return `<input type="text" placeholder="Buscar..." value="${esc(atual)}" oninput="aplicarFiltroColuna('${tabela}','${c.key}',this.value)" class="filtro-input">`;
+}
+
 function renderCrudTable(tabela, colunasExtras){
   const def = TABLE_DEFS[tabela];
   const tabelaReal = def.tabelaReal || tabela;
-  let linhas = def.empresaFixa ? state[tabelaReal].filter(r=>r.empresa===def.empresaFixa) : porEmpresa(state[tabelaReal]);
+  const linhasBase = def.empresaFixa ? state[tabelaReal].filter(r=>r.empresa===def.empresaFixa) : porEmpresa(state[tabelaReal]);
   const colunas = def.colunas;
-  if(!linhas.length){
+  if(!linhasBase.length){
     return `
     <div class="hint">${def.subtitulo||''}</div>
     <div style="margin-bottom:14px;"><button class="btn btn-primary" onclick="openModal('${tabela}')">+ Novo registro</button></div>
@@ -186,17 +231,29 @@ function renderCrudTable(tabela, colunasExtras){
       <div>Nenhum registro cadastrado ainda.</div>
     </div>`;
   }
+  const linhas = def.filtravel ? linhasComFiltro(tabela, colunas, linhasBase) : linhasBase;
+  const temFiltroAtivo = def.filtravel && Object.values(uiFiltros[tabela]||{}).some(v=>v);
   return `
   <div class="hint">${def.subtitulo||''}</div>
-  <div style="margin-bottom:14px;"><button class="btn btn-primary" onclick="openModal('${tabela}')">+ Novo registro</button></div>
+  <div style="margin-bottom:14px;display:flex;gap:8px;align-items:center;">
+    <button class="btn btn-primary" onclick="openModal('${tabela}')">+ Novo registro</button>
+    ${temFiltroAtivo ? `<button class="btn btn-ghost btn-sm" onclick="limparFiltrosColuna('${tabela}')">Limpar filtros</button>` : ''}
+  </div>
   <div class="table-wrap"><table class="${def.primeiraColunaFixa ? 'table-frozen-first' : ''}">
-    <thead><tr>
-      ${colunas.map(c=>`<th>${c.label}</th>`).join('')}
-      ${(colunasExtras||[]).map(c=>`<th>${c.label}</th>`).join('')}
-      <th></th>
-    </tr></thead>
+    <thead>
+      <tr>
+        ${colunas.map(c=>`<th>${c.label}</th>`).join('')}
+        ${(colunasExtras||[]).map(c=>`<th>${c.label}</th>`).join('')}
+        <th></th>
+      </tr>
+      ${def.filtravel ? `<tr class="filtro-row">
+        ${colunas.map(c=>`<th>${renderFiltroCelula(tabela, c, linhasBase)}</th>`).join('')}
+        ${(colunasExtras||[]).map(()=>'<th></th>').join('')}
+        <th></th>
+      </tr>` : ''}
+    </thead>
     <tbody>
-      ${linhas.map(r=>`
+      ${linhas.length ? linhas.map(r=>`
         <tr class="${def.linhaClass ? def.linhaClass(r) : ''}">
           ${colunas.map(c=>`<td class="${(c.alertaSeVazio && !r[c.key]) || (c.alertaSe && c.alertaSe(r)) ? 'cell-alert' : ''}">${formatCellValue(c, r[c.key], r)}</td>`).join('')}
           ${(colunasExtras||[]).map(c=>`<td>${c.render(r)}</td>`).join('')}
@@ -205,7 +262,7 @@ function renderCrudTable(tabela, colunasExtras){
             <button class="btn btn-danger btn-sm" onclick="excluirLinha('${tabela}','${r.id}')">Excluir</button>
           </td>
         </tr>
-      `).join('')}
+      `).join('') : `<tr><td colspan="${colunas.length + (colunasExtras||[]).length + 1}" class="small-muted" style="text-align:center;padding:16px;">Nenhum resultado com os filtros aplicados.</td></tr>`}
     </tbody>
   </table></div>`;
 }
@@ -234,8 +291,8 @@ const TABLE_DEFS = {
     ]
   },
   processos: {
-    titulo:'Processo', subtitulo:'Cadastro de processos — câmbio, prontidão de carga e status de recebimento. Data Fech. Câmbio e Status Recebimento ficam em vermelho quando o recebimento está Pendente/Parcial — e o Valor NEXUS vai automaticamente para Contas a Receber nesse caso.',
-    primeiraColunaFixa: true,
+    titulo:'Processo', subtitulo:'Cadastro de processos. Data Fech. Câmbio fica vermelha sempre que estiver vazia (mesmo com recebimento total). Status Recebimento fica vermelho enquanto não for "Recebido Total".',
+    primeiraColunaFixa: true, filtravel: true,
     colunas:[
       {key:'numero', label:'Nº Processo', type:'text', obrigatorio:true},
       {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS, obrigatorio:true},
@@ -248,10 +305,9 @@ const TABLE_DEFS = {
       {key:'valorMoeda', label:'Valor Moeda Estrang.', type:'moeda', moedaSimbolo:''},
       {key:'valorNexus', label:'Valor NEXUS (US$)', type:'moeda', moedaSimbolo:'US$'},
       {key:'taxaCambio', label:'Taxa Câmbio', type:'number'},
-      {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date',
-        alertaSe: r => r.statusRecebimento==='Pendente' || r.statusRecebimento==='Recebido Parcial'},
+      {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date', alertaSeVazio:true},
       {key:'statusRecebimento', label:'Status Recebimento', type:'select', options:STATUS_RECEBIMENTO_PROC,
-        alertaSe: r => r.statusRecebimento==='Pendente' || r.statusRecebimento==='Recebido Parcial'},
+        alertaSe: r => r.statusRecebimento!=='Recebido Total'},
       {key:'obs', label:'Observações', type:'textarea'},
     ]
   },
@@ -271,7 +327,7 @@ const TABLE_DEFS = {
     ]
   },
   despesasNexus: {
-    titulo:'Despesa (NEXUS)', tabelaReal:'despesas', empresaFixa:'NEXUS',
+    titulo:'Despesa (NEXUS)', tabelaReal:'despesas', empresaFixa:'NEXUS', filtravel: true,
     subtitulo:'Despesas pagas pela NEXUS (matriz nos EUA). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', obrigatorio:true, placeholderAdm:true},
@@ -285,7 +341,7 @@ const TABLE_DEFS = {
     ]
   },
   despesasCH: {
-    titulo:'Despesa (CHALLENGE)', tabelaReal:'despesas', empresaFixa:'CHALLENGE',
+    titulo:'Despesa (CHALLENGE)', tabelaReal:'despesas', empresaFixa:'CHALLENGE', filtravel: true,
     subtitulo:'Despesas pagas pela CHALLENGE (trading operacional no Brasil). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', obrigatorio:true, placeholderAdm:true},

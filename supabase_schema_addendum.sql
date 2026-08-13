@@ -35,3 +35,12 @@ update empresas set codigo='CHALLENGE' where codigo='PANGEA';
 -- automaticamente quando o processo está Pendente/Recebido Parcial
 -- ============================================================
 alter table processos add column valor_nexus numeric(14,2);
+
+-- ============================================================
+-- Corrige exclusão de processo gerado a partir de uma cotação:
+-- a FK cotacoes.processo_gerado_id não tinha ON DELETE definido
+-- (bloqueava a exclusão do processo). Passa a apenas desvincular.
+-- ============================================================
+alter table cotacoes drop constraint cotacoes_processo_gerado_id_fkey;
+alter table cotacoes add constraint cotacoes_processo_gerado_id_fkey
+  foreign key (processo_gerado_id) references processos(id) on delete set null;
