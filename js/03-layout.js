@@ -6,11 +6,12 @@ const NAV = [
     {id:'dashboard', label:'Dashboard'},
   ]},
   {group:'Operação', items:[
-    {id:'clientes', label:'Clientes'},
     {id:'cotacoes', label:'Cotações'},
     {id:'processos', label:'Processos'},
-    {id:'despesas', label:'Despesas'},
+    {id:'despesasNexus', label:'Despesas NEXUS'},
+    {id:'despesasCH', label:'Despesas CH'},
     {id:'resultado', label:'Resultado'},
+    {id:'resultadoConsolidado', label:'Resultado Consolidado'},
   ]},
   {group:'Financeiro', items:[
     {id:'contasReceber', label:'Contas a Receber'},
@@ -18,6 +19,7 @@ const NAV = [
     {id:'despAdm', label:'Desp. Administrativas'},
     {id:'fluxoCaixa', label:'Fluxo de Caixa'},
     {id:'dreGerencial', label:'DRE Gerencial'},
+    {id:'clientes', label:'Clientes'},
   ]},
   {group:'Ferramentas', items:[
     {id:'cobranca', label:'Cobrança Rápida'},
@@ -32,8 +34,10 @@ const MODULE_TITLES = {
   clientes:['Clientes','Cadastro de clientes — alimenta os dropdowns de Processos'],
   cotacoes:['Cotações','Monte a proforma, exporte em PDF e gere a venda quando o cliente aprovar'],
   processos:['Processos','Cadastro operacional de processos de importação/exportação'],
-  despesas:['Despesas por Processo','Lance despesas assim que surgirem — saldo e status calculados automaticamente'],
+  despesasNexus:['Despesas NEXUS','Despesas pagas pela matriz financeira/operacional nos EUA'],
+  despesasCH:['Despesas CH','Despesas pagas pela CHALLENGE (trading operacional no Brasil)'],
   resultado:['Resultado por Processo','Automático — cruza Processos × Despesas × Contas a Pagar (não editável)'],
+  resultadoConsolidado:['Resultado Consolidado','Visão do grupo (NEXUS + CHALLENGE) por processo, com o resultado operacional isolado da CHALLENGE (transfer pricing)'],
   contasReceber:['Contas a Receber','Títulos a receber por proforma/embarque, multimoeda'],
   contasPagar:['Contas a Pagar','Títulos de fornecedores pendentes'],
   despAdm:['Despesas Administrativas','Folha, pró-labore e despesas fixas da operação'],
@@ -97,7 +101,8 @@ function setEmpresaFiltro(v){ ui.empresaFiltro = v; render(); }
 function renderContent(){
   const map = {
     dashboard: renderDashboard, clientes: renderClientes, cotacoes: renderCotacoesModulo, processos: renderProcessos,
-    despesas: renderDespesas, resultado: renderResultado, contasReceber: renderContasReceber,
+    despesasNexus: renderDespesasNexus, despesasCH: renderDespesasCH, resultado: renderResultado,
+    resultadoConsolidado: renderResultadoConsolidado, contasReceber: renderContasReceber,
     contasPagar: renderContasPagar, despAdm: renderDespAdm, fluxoCaixa: renderFluxoCaixa,
     dreGerencial: renderDRE, cobranca: renderCobranca, checklists: renderChecklists, empresas: renderEmpresas,
   };

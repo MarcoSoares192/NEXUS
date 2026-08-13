@@ -3,7 +3,7 @@
 // Estado agora é carregado/persistido no Supabase (não mais localStorage)
 // ============================================================
 
-const EMPRESAS = ['NEXUS','PANGEA','AXIA'];
+const EMPRESAS = ['NEXUS','CHALLENGE','AXIA'];
 const MOEDAS_PROC = ['USD','EUR','GBP'];
 const MOEDAS_CAR = ['USD','EUR','GBP','BRL'];
 const CENTROS_CUSTO = ['PRODUTO','VIAGEM','LOGISTICA','DESPESA ADMINISTRATIVA','DESPESA COMERCIAL','PRO LABORE MENSAL','RETIRADA DE LUCRO','SALÁRIO'];
@@ -21,7 +21,7 @@ function estadoVazio(){
     despAdm: [], outrasEntradas: [],
     checklistDiario: {}, checklistMensal: {},
     cotacoes: [], cotacaoContadores: {},
-    empresasPerfil: { NEXUS:{}, PANGEA:{}, AXIA:{} },
+    empresasPerfil: { NEXUS:{}, CHALLENGE:{}, AXIA:{} },
   };
 }
 

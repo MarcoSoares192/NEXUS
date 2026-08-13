@@ -94,3 +94,8 @@ tbody tr:hover{background:#f9fafb;}
 ::-webkit-scrollbar{height:8px;width:8px;}
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:99px;}
 @media print{.sidebar,.topbar .btn,.no-print{display:none!important;}}
+
+/* Alertas visuais (Processos: câmbio em aberto / status pendente) */
+tr.row-alert td{background:#fef2f2!important;}
+tr.row-alert td:first-child{border-left:3px solid #dc2626;}
+td.cell-alert{background:#fee2e2!important;color:#b91c1c;font-weight:700;}

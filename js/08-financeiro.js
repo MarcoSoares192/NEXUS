@@ -25,11 +25,13 @@ function renderContasPagar(){
   ];
   const linhas = porEmpresa(state.contasPagar);
   const abertas = linhas.filter(r=>!r.dataPagamento);
-  const totalAberto = abertas.reduce((s,r)=>s+(Number(r.valor)||0),0);
+  const totalAbertoNexus = abertas.filter(r=>r.empresa==='NEXUS').reduce((s,r)=>s+(Number(r.valor)||0),0);
+  const totalAbertoOutras = abertas.filter(r=>r.empresa!=='NEXUS').reduce((s,r)=>s+(Number(r.valor)||0),0);
   return `
-  <div class="grid grid-2" style="margin-bottom:18px;">
+  <div class="grid grid-3" style="margin-bottom:18px;">
     ${kpiCard('Contas em Aberto', abertas.length, `de ${linhas.length} título(s) no total`, 'var(--amber)')}
-    ${kpiCard('Valor Total a Pagar', fmtMoney(totalAberto), '', 'var(--accent)')}
+    ${kpiCard('A Pagar — NEXUS', 'US$ ' + fmtNum(totalAbertoNexus), '', 'var(--accent)')}
+    ${kpiCard('A Pagar — CHALLENGE/outras (R$)', fmtMoney(totalAbertoOutras), '', 'var(--accent2)')}
   </div>
   ${renderCrudTable('contasPagar', extras)}
   `;

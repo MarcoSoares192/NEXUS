@@ -22,3 +22,16 @@ create index idx_cap_despesa on contas_pagar(despesa_id);
 
 alter table contas_pagar add column desp_adm_id uuid references desp_adm(id) on delete cascade;
 create index idx_cap_desp_adm on contas_pagar(desp_adm_id);
+
+-- ============================================================
+-- Renomear PANGEA -> CHALLENGE (mesma linha/empresa, só troca o código)
+-- ============================================================
+alter table empresas drop constraint empresas_codigo_check;
+alter table empresas add constraint empresas_codigo_check check (codigo in ('NEXUS','CHALLENGE','AXIA'));
+update empresas set codigo='CHALLENGE' where codigo='PANGEA';
+
+-- ============================================================
+-- Processos: novo campo Valor NEXUS (US$) — alimenta Contas a Receber
+-- automaticamente quando o processo está Pendente/Recebido Parcial
+-- ============================================================
+alter table processos add column valor_nexus numeric(14,2);

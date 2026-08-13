@@ -36,13 +36,13 @@ const TABLE_MAP = {
       numero:o.numero, empresa_id: empresaIdDe(o.empresa), cliente_id: o.clienteId || null,
       descricao:o.descricao, data_abertura: dOrNull(o.dataAbertura), data_prontidao: dOrNull(o.dataProntidao),
       data_embarque: dOrNull(o.dataEmbarque), moeda: dOrNull(o.moeda), valor_moeda: nOrNull(o.valorMoeda),
-      taxa_cambio: nOrNull(o.taxaCambio), data_fech_cambio: dOrNull(o.dataFechCambio),
+      valor_nexus: nOrNull(o.valorNexus), taxa_cambio: nOrNull(o.taxaCambio), data_fech_cambio: dOrNull(o.dataFechCambio),
       status_recebimento: dOrNull(o.statusRecebimento), obs:o.obs,
     }),
     fromDb: (r) => ({
       id:r.id, numero:r.numero, empresa: empresaCodigoDe(r.empresa_id), clienteId:r.cliente_id,
       descricao:r.descricao, dataAbertura:r.data_abertura, dataProntidao:r.data_prontidao, dataEmbarque:r.data_embarque,
-      moeda:r.moeda, valorMoeda:r.valor_moeda, taxaCambio:r.taxa_cambio, dataFechCambio:r.data_fech_cambio,
+      moeda:r.moeda, valorMoeda:r.valor_moeda, valorNexus:r.valor_nexus, taxaCambio:r.taxa_cambio, dataFechCambio:r.data_fech_cambio,
       statusRecebimento:r.status_recebimento, obs:r.obs,
     }),
   },
@@ -175,4 +175,42 @@ async function reconciliarContasAPagar(){
   for(const d of state.despesas) await sincronizarContaAPagarDaDespesa(d);
   for(const da of state.despAdm) await sincronizarContaAPagarDoDespAdm(da);
   state.contasPagar = await dbListar('contasPagar');
+}
+
+async function reconciliarContasAReceber(){
+  for(const p of state.processos) await sincronizarContaAReceberDoProcesso(p);
+  state.contasReceber = await dbListar('contasReceber');
+}
+
+// Processo pendente/parcial: o Valor NEXUS aparece automaticamente em Contas a Receber
+// (título "VALOR NEXUS (auto)"). Some sozinho quando o processo é dado como recebido.
+async function sincronizarContaAReceberDoProcesso(p){
+  const precisaCAR = (p.statusRecebimento==='Pendente' || p.statusRecebimento==='Recebido Parcial') && p.valorNexus;
+  const { data: existente } = await sb.from('contas_receber').select('*').eq('processo_id', p.id).eq('ref','VALOR NEXUS (auto)').maybeSingle();
+  if(precisaCAR){
+    const row = {
+      processo_id: p.id, empresa_id: empresaIdDe('NEXUS'), cliente_id: p.clienteId || null,
+      ref: 'VALOR NEXUS (auto)', moeda: 'USD', valor: nOrNull(p.valorNexus) || 0,
+      vencimento: dOrNull(p.dataEmbarque || p.dataProntidao),
+    };
+    if(existente) await sb.from('contas_receber').update(row).eq('id', existente.id);
+    else await sb.from('contas_receber').insert(row);
+  } else if(existente){
+    await sb.from('contas_receber').delete().eq('id', existente.id);
+  }
+}
+
+// Contas a Pagar lançada manualmente (sem despesa_id/desp_adm_id): ao preencher a Data
+// de Pgto, vira automaticamente uma Despesa da empresa selecionada e some daqui.
+async function sincronizarDespesaDaContaPagar(cap){
+  if(cap.despesaId || cap.despAdmId) return; // já é espelho automático de outra tela — não mexe
+  if(!cap.dataPagamento) return;
+  const despesaCriada = await dbInserir('despesas', {
+    processoNumero: cap.processoNumero || '', empresa: cap.empresa, data: cap.dataPagamento,
+    fornecedor: cap.fornecedor, descricao: '', centroCusto: cap.centroCusto,
+    dataVencimento: cap.vencimento || '', dataPagamento: cap.dataPagamento, valorPago: cap.valor, status: 'Pago',
+  });
+  state.despesas.push(despesaCriada);
+  await sb.from('contas_pagar').delete().eq('id', cap.id);
+  state.contasPagar = state.contasPagar.filter(r=>r.id!==cap.id);
 }
