@@ -18,7 +18,7 @@ function estadoVazio(){
   return {
     saldoInicialAno: 0,
     clientes: [], processos: [], despesas: [], contasReceber: [], contasPagar: [],
-    despAdm: [], outrasEntradas: [],
+    despAdm: [], outrasEntradas: [], contasBancarias: [],
     checklistDiario: {}, checklistMensal: {},
     cotacoes: [], cotacaoContadores: {},
     empresasPerfil: { NEXUS:{}, CHALLENGE:{}, AXIA:{} },
@@ -58,7 +58,10 @@ async function carregarTudoDoBanco(){
     };
   });
 
-  // 2) processos precisa vir antes de despesas/contasReceber/contasPagar (dependem de processoNumero<->id)
+  // 2) contas bancárias (precisa vir cedo, usada nos formulários de despesas/recebimento)
+  state.contasBancarias = await dbListar('contasBancarias');
+
+  // 3) processos precisa vir antes de despesas/contasReceber/contasPagar (dependem de processoNumero<->id)
   state.clientes = await dbListar('clientes');
   state.processos = await dbListar('processos');
   state.despesas = await dbListar('despesas');

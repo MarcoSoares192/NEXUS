@@ -68,9 +68,10 @@ function calcResultadoGrupoPorProcesso(){
     const resultadoOperacionalChallengeRS = cambioRecebidoChallengeRS===null ? null : (cambioRecebidoChallengeRS - despesasChallengeRS);
     const resultadoNexusUSD = (taxa>0 && resultadoOperacionalChallengeRS!==null)
       ? (valorNexus - despesasNexusUSD + (resultadoOperacionalChallengeRS/taxa)) : null;
+    const margemPct = (resultadoNexusUSD!==null && valorNexus>0) ? (resultadoNexusUSD/valorNexus) : null;
     return { numero:p.numero, cliente: clienteNome(p.clienteId), empresa:p.empresa,
       valorNexus, cambioRecebidoChallengeRS, despesasNexusUSD, despesasChallengeRS,
-      resultadoNexusUSD, resultadoOperacionalChallengeRS };
+      resultadoNexusUSD, resultadoOperacionalChallengeRS, margemPct };
   });
 }
 
@@ -96,6 +97,7 @@ function renderResultadoConsolidado(){
       <th class="text-right">Desp. CHALLENGE (R$)</th>
       <th class="text-right">Result. Operacional CHALLENGE (R$)</th>
       <th class="text-right">Resultado NEXUS (US$)</th>
+      <th class="text-right">Margem %</th>
     </tr></thead>
     <tbody>
       ${dados.map(r=>`
@@ -108,6 +110,7 @@ function renderResultadoConsolidado(){
           <td class="text-right mono">${fmtMoney(r.despesasChallengeRS)}</td>
           <td class="text-right mono" style="font-weight:700;color:${r.resultadoOperacionalChallengeRS>=0?'#15803d':'#b91c1c'}">${r.resultadoOperacionalChallengeRS===null?'—':fmtMoney(r.resultadoOperacionalChallengeRS)}</td>
           <td class="text-right mono" style="font-weight:700;color:${r.resultadoNexusUSD>=0?'#15803d':'#b91c1c'}">${r.resultadoNexusUSD===null?'—':'US$ '+fmtNum(r.resultadoNexusUSD)}</td>
+          <td class="text-right mono" style="font-weight:700;color:${r.margemPct>=0?'#15803d':'#b91c1c'}">${r.margemPct===null?'—':fmtPct(r.margemPct)}</td>
         </tr>
       `).join('')}
     </tbody>

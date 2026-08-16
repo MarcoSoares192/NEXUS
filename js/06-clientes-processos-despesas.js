@@ -31,6 +31,17 @@ function renderDespesasPorEmpresa(tabela, empresa, simbolo){
   ${renderCrudTable(tabela, extras)}
   `;
 }
+function renderContasBancarias(){
+  const extras = [
+    { label:'Saldo Atual', render: c => {
+      const saldo = saldoContaBancaria(c);
+      const simbolo = c.moeda==='USD'?'US$':(c.moeda==='BRL'?'R$':c.moeda);
+      return `<span class="mono" style="font-weight:700;color:${saldo>=0?'#15803d':'#b91c1c'}">${simbolo} ${fmtNum(saldo)}</span>`;
+    } },
+  ];
+  return renderCrudTable('contasBancarias', extras);
+}
+
 function renderDespesasNexus(){ return renderDespesasPorEmpresa('despesasNexus', 'NEXUS', 'US$'); }
 function renderDespesasCH(){ return renderDespesasPorEmpresa('despesasCH', 'CHALLENGE', 'R$'); }
 

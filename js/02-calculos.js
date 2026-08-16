@@ -160,3 +160,22 @@ function calcDRE(ano){
       lucroLiquido, margemLiquida };
   });
 }
+
+// ============================================================
+// CONCILIAÇÃO BANCÁRIA: saldo de cada conta = saldo inicial (do extrato)
+// + recebimentos creditados nela + outras entradas creditadas nela
+// - despesas debitadas nela - despesas administrativas debitadas nela.
+// Só entra o que já foi de fato movimentado (valorRecebido/valorPago
+// preenchidos), nunca valores em aberto.
+// ============================================================
+function saldoContaBancaria(conta){
+  const recebido = state.contasReceber.filter(r=>r.contaBancariaId===conta.id)
+    .reduce((s,r)=>s+(Number(r.valorRecebido)||0),0);
+  const despesasPagas = state.despesas.filter(d=>d.contaBancariaId===conta.id)
+    .reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  const despAdmPagas = state.despAdm.filter(d=>d.contaBancariaId===conta.id)
+    .reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  const outras = state.outrasEntradas.filter(o=>o.contaBancariaId===conta.id)
+    .reduce((s,o)=>s+(Number(o.valor)||0),0);
+  return (Number(conta.saldoInicial)||0) + recebido + outras - despesasPagas - despAdmPagas;
+}

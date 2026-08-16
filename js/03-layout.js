@@ -26,6 +26,7 @@ const NAV = [
     {id:'checklists', label:'Checklists'},
   ]},
   {group:'Configurações', items:[
+    {id:'contasBancarias', label:'Contas Bancárias'},
     {id:'empresas', label:'Empresas'},
   ]},
 ];
@@ -45,6 +46,7 @@ const MODULE_TITLES = {
   dreGerencial:['DRE Gerencial Mensal','Gerado automaticamente a partir do Fluxo de Caixa'],
   cobranca:['Cobrança Rápida','Monte o texto de cobrança e copie para e-mail'],
   checklists:['Checklists Operacionais (SOP)','Rotina diária e fechamento mensal'],
+  contasBancarias:['Contas Bancárias','Cadastro das contas de cada empresa — base da conciliação bancária'],
   empresas:['Empresas','Dados de letterhead e bancários usados nas cotações (por empresa)'],
 };
 
@@ -104,7 +106,8 @@ function renderContent(){
     despesasNexus: renderDespesasNexus, despesasCH: renderDespesasCH, resultado: renderResultado,
     resultadoConsolidado: renderResultadoConsolidado, contasReceber: renderContasReceber,
     contasPagar: renderContasPagar, despAdm: renderDespAdm, fluxoCaixa: renderFluxoCaixa,
-    dreGerencial: renderDRE, cobranca: renderCobranca, checklists: renderChecklists, empresas: renderEmpresas,
+    dreGerencial: renderDRE, cobranca: renderCobranca, checklists: renderChecklists,
+    contasBancarias: renderContasBancarias, empresas: renderEmpresas,
   };
   document.getElementById('content').innerHTML = (map[ui.modulo] || renderDashboard)();
   if(ui.modulo==='cotacoes' && ui.cotacaoEditId && document.getElementById('itensBody')){

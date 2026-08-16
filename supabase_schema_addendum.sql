@@ -44,3 +44,35 @@ alter table processos add column valor_nexus numeric(14,2);
 alter table cotacoes drop constraint cotacoes_processo_gerado_id_fkey;
 alter table cotacoes add constraint cotacoes_processo_gerado_id_fkey
   foreign key (processo_gerado_id) references processos(id) on delete set null;
+
+-- ============================================================
+-- Conciliação bancária: contas por empresa + vínculo em cada
+-- lançamento que efetivamente movimenta caixa
+-- ============================================================
+create table contas_bancarias (
+  id uuid primary key default gen_random_uuid(),
+  empresa_id uuid references empresas(id),
+  nome text not null,
+  moeda text not null default 'USD',
+  saldo_inicial numeric(14,2) not null default 0,
+  saldo_inicial_data date,
+  created_at timestamptz not null default now()
+);
+alter table contas_bancarias enable row level security;
+create policy contas_bancarias_authenticated_all on contas_bancarias
+  for all to authenticated using (true) with check (true);
+
+alter table despesas add column conta_bancaria_id uuid references contas_bancarias(id);
+alter table contas_receber add column conta_bancaria_id uuid references contas_bancarias(id);
+alter table outras_entradas add column conta_bancaria_id uuid references contas_bancarias(id);
+
+alter table desp_adm add column empresa_id uuid references empresas(id);
+alter table desp_adm add column conta_bancaria_id uuid references contas_bancarias(id);
+
+-- Contas iniciais (edite o saldo_inicial de cada uma direto na tela "Contas Bancárias" do app)
+insert into contas_bancarias (empresa_id, nome, moeda)
+  select id, 'HELM BANK', 'USD' from empresas where codigo='NEXUS';
+insert into contas_bancarias (empresa_id, nome, moeda)
+  select id, 'BB AMÉRICAS', 'USD' from empresas where codigo='NEXUS';
+insert into contas_bancarias (empresa_id, nome, moeda)
+  select id, 'BANCO DO BRASIL', 'BRL' from empresas where codigo='CHALLENGE';

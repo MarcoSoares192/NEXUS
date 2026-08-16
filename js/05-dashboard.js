@@ -53,7 +53,49 @@ function renderDashboard(){
   setTimeout(()=>desenharGraficosDashboard(fluxo), 0);
   setTimeout(()=>desenharChartPagamentos(pagamentosPorMes), 0);
 
+  // ---------- Bloco NEXUS (US$) ----------
+  const receitaTotalNexusUSD = state.processos.reduce((s,p)=>s+(Number(p.valorNexus)||0),0);
+  const carNexus = state.contasReceber.filter(r=>r.empresa==='NEXUS');
+  const recebidoNexusUSD = carNexus.reduce((s,r)=>s+(Number(r.valorRecebido)||0),0);
+  const aReceberNexusUSD = carNexus.filter(r=>!r.dataRecebimento).reduce((s,r)=>s+(Number(r.valor)||0),0);
+  const despesasPagasNexusUSD = state.despesas.filter(d=>d.empresa==='NEXUS' && d.status==='Pago').reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  const lucroBrutoNexusUSD = receitaTotalNexusUSD - despesasPagasNexusUSD;
+  const contaHelmBank = state.contasBancarias.find(c=>c.empresa==='NEXUS' && /helm/i.test(c.nome));
+  const contaBBAmericas = state.contasBancarias.find(c=>c.empresa==='NEXUS' && /bb\s*am/i.test(c.nome));
+
+  // ---------- Bloco CHALLENGE / Banco do Brasil (R$) ----------
+  const receitaTotalChallengeRS = state.processos.reduce((s,p)=>{ const v=procValorFechCambioRS(p); return s+(v||0); },0);
+  const aReceberSemCambioFechado = state.processos.filter(p=>!p.dataFechCambio).reduce((s,p)=>s+(Number(p.valorMoeda)||0),0);
+  const despesasPagasChallengeRS = state.despesas.filter(d=>d.empresa==='CHALLENGE' && d.status==='Pago').reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  const lucroBrutoChallengeRS = receitaTotalChallengeRS - despesasPagasChallengeRS;
+  const contaBancoDoBrasil = state.contasBancarias.find(c=>c.empresa==='CHALLENGE' && /banco do brasil/i.test(c.nome));
+
   return `
+  <div class="section-title">NEXUS (US$)</div>
+  <div class="grid grid-4" style="margin-bottom:10px;">
+    ${kpiCard('Receita Total', 'US$ '+fmtNum(receitaTotalNexusUSD), '', 'var(--accent)')}
+    ${kpiCard('Recebido', 'US$ '+fmtNum(recebidoNexusUSD), '', 'var(--green)')}
+    ${kpiCard('A Receber', 'US$ '+fmtNum(aReceberNexusUSD), '', 'var(--amber)')}
+    ${kpiCard('Despesas Pagas', 'US$ '+fmtNum(despesasPagasNexusUSD), '', 'var(--slate)')}
+  </div>
+  <div class="grid grid-3" style="margin-bottom:18px;">
+    ${kpiCard('Lucro Bruto', 'US$ '+fmtNum(lucroBrutoNexusUSD), '', 'var(--accent2)')}
+    ${kpiCard('Saldo HELM BANK', contaHelmBank? 'US$ '+fmtNum(saldoContaBancaria(contaHelmBank)) : '—', contaHelmBank?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
+    ${kpiCard('Saldo BB Américas', contaBBAmericas? 'US$ '+fmtNum(saldoContaBancaria(contaBBAmericas)) : '—', contaBBAmericas?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
+  </div>
+
+  <div class="section-title">CHALLENGE — Banco do Brasil (R$)</div>
+  <div class="grid grid-3" style="margin-bottom:10px;">
+    ${kpiCard('Receita Total', fmtMoney(receitaTotalChallengeRS), '', 'var(--accent)')}
+    ${kpiCard('A Receber (câmbio ainda não fechado)', fmtNum(aReceberSemCambioFechado)+' (moeda original)', '', 'var(--amber)')}
+    ${kpiCard('Despesas Pagas', fmtMoney(despesasPagasChallengeRS), '', 'var(--slate)')}
+  </div>
+  <div class="grid grid-2" style="margin-bottom:18px;">
+    ${kpiCard('Lucro Bruto', fmtMoney(lucroBrutoChallengeRS), '', 'var(--accent2)')}
+    ${kpiCard('Saldo Banco do Brasil', contaBancoDoBrasil? fmtMoney(saldoContaBancaria(contaBancoDoBrasil)) : '—', contaBancoDoBrasil?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
+  </div>
+
+  <div class="section-title">Resumo Geral do Grupo</div>
   <div class="grid grid-5">
     ${kpiCard('Receita Total', fmtMoney(receitaTotal), `Margem geral: ${fmtPct(margemGeral)}`, 'var(--accent)')}
     ${kpiCard('Recebido', fmtMoney(recebido), `% recebido: ${fmtPct(receitaTotal? recebido/receitaTotal:0)}`, 'var(--green)')}

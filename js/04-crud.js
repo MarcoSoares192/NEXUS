@@ -24,6 +24,13 @@ function fieldInput(col, value, extra){
       ${state.processos.map(p=>`<option value="${esc(p.numero)}" ${String(value)===String(p.numero)?'selected':''}>${esc(p.numero)} — ${esc(clienteNome(p.clienteId))}</option>`).join('')}
     </select>`;
   }
+  if(col.type==='contaBancariaSelect'){
+    const opcoes = col.empresaFiltroFixo ? state.contasBancarias.filter(c=>c.empresa===col.empresaFiltroFixo) : state.contasBancarias;
+    return `<select ${common} ${extra}>
+      <option value="">—</option>
+      ${opcoes.map(c=>`<option value="${c.id}" ${String(value)===String(c.id)?'selected':''}>${col.empresaFiltroFixo?'':esc(c.empresa)+' — '}${esc(c.nome)} (${esc(c.moeda)})</option>`).join('')}
+    </select>`;
+  }
   if(col.type==='date') return `<input type="date" ${common} value="${esc(value)}">`;
   if(col.type==='number') return `<input type="number" step="any" ${common} value="${esc(value)}">`;
   if(col.type==='moeda'){
@@ -275,6 +282,11 @@ function formatCellValue(col, v, row){
     return `<span class="mono">${simbolo} ${fmtMoedaMascara(Number(v).toFixed(2))}</span>`;
   }
   if(col.type==='clienteSelect') return esc(clienteNome(v));
+  if(col.type==='contaBancariaSelect'){
+    if(!v) return '—';
+    const c = state.contasBancarias.find(x=>x.id===v);
+    return c ? esc(c.nome) : '—';
+  }
   if(v===''||v===null||v===undefined) return '—';
   return esc(v);
 }
@@ -328,13 +340,14 @@ const TABLE_DEFS = {
   },
   despesasNexus: {
     titulo:'Despesa (NEXUS)', tabelaReal:'despesas', empresaFixa:'NEXUS', filtravel: true,
-    subtitulo:'Despesas pagas pela NEXUS (matriz nos EUA). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo.',
+    subtitulo:'Despesas pagas pela NEXUS (matriz nos EUA). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo. A Conta Bancária alimenta o Saldo Bancário do Dashboard.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', obrigatorio:true, placeholderAdm:true},
       {key:'data', label:'Data', type:'date'},
       {key:'fornecedor', label:'Fornecedor', type:'text'},
       {key:'descricao', label:'Descrição', type:'text'},
       {key:'centroCusto', label:'Centro de Custo', type:'select', options:CENTROS_CUSTO},
+      {key:'contaBancariaId', label:'Conta Bancária', type:'contaBancariaSelect', empresaFiltroFixo:'NEXUS'},
       {key:'dataPagamento', label:'Data Pagamento', type:'date'},
       {key:'valorPago', label:'Valor Pago (US$)', type:'moeda', moedaSimbolo:'US$'},
       {key:'status', label:'Status', type:'select', options:STATUS_DESPESA},
@@ -342,16 +355,27 @@ const TABLE_DEFS = {
   },
   despesasCH: {
     titulo:'Despesa (CHALLENGE)', tabelaReal:'despesas', empresaFixa:'CHALLENGE', filtravel: true,
-    subtitulo:'Despesas pagas pela CHALLENGE (trading operacional no Brasil). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo.',
+    subtitulo:'Despesas pagas pela CHALLENGE (trading operacional no Brasil). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo. A Conta Bancária alimenta o Saldo Bancário do Dashboard.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', obrigatorio:true, placeholderAdm:true},
       {key:'data', label:'Data', type:'date'},
       {key:'fornecedor', label:'Fornecedor', type:'text'},
       {key:'descricao', label:'Descrição', type:'text'},
       {key:'centroCusto', label:'Centro de Custo', type:'select', options:CENTROS_CUSTO},
+      {key:'contaBancariaId', label:'Conta Bancária', type:'contaBancariaSelect', empresaFiltroFixo:'CHALLENGE'},
       {key:'dataPagamento', label:'Data Pagamento', type:'date'},
       {key:'valorPago', label:'Valor Pago (R$)', type:'moeda', moedaSimbolo:'R$'},
       {key:'status', label:'Status', type:'select', options:STATUS_DESPESA},
+    ]
+  },
+  contasBancarias: {
+    titulo:'Conta Bancária', subtitulo:'Cadastre as contas de cada empresa. O Saldo Inicial deve ser o saldo real do extrato numa data de referência — a partir daí o sistema soma os recebimentos e subtrai as despesas lançadas naquela conta, automaticamente.',
+    colunas:[
+      {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS, obrigatorio:true},
+      {key:'nome', label:'Nome do Banco/Conta', type:'text', obrigatorio:true},
+      {key:'moeda', label:'Moeda', type:'select', options:['USD','BRL','EUR','GBP'], obrigatorio:true},
+      {key:'saldoInicial', label:'Saldo Inicial', type:'moeda', moedaSimbolo:''},
+      {key:'saldoInicialData', label:'Data do Saldo Inicial', type:'date'},
     ]
   },
   contasReceber: {
@@ -366,6 +390,7 @@ const TABLE_DEFS = {
       {key:'vencimento', label:'Vencimento', type:'date'},
       {key:'dataRecebimento', label:'Data Recebimento', type:'date'},
       {key:'valorRecebido', label:'Valor Recebido', type:'moeda', moedaSimbolo:''},
+      {key:'contaBancariaId', label:'Conta Bancária (recebimento)', type:'contaBancariaSelect'},
     ]
   },
   contasPagar: {
@@ -381,13 +406,15 @@ const TABLE_DEFS = {
     ]
   },
   despAdm: {
-    titulo:'Despesa Administrativa', subtitulo:'Folha, pró-labore, contabilidade e demais despesas fixas.',
+    titulo:'Despesa Administrativa', subtitulo:'Folha, pró-labore, contabilidade e demais despesas fixas. Empresa e Conta Bancária alimentam o Saldo Bancário do Dashboard.',
     colunas:[
       {key:'data', label:'Data', type:'date', obrigatorio:true},
+      {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS, obrigatorio:true},
       {key:'categoria', label:'Categoria', type:'select', options:CATEGORIAS_ADM, obrigatorio:true},
       {key:'descricao', label:'Descrição', type:'text'},
       {key:'beneficiario', label:'Beneficiário', type:'text'},
       {key:'valor', label:'Valor (R$)', type:'moeda', moedaSimbolo:'R$', obrigatorio:true},
+      {key:'contaBancariaId', label:'Conta Bancária', type:'contaBancariaSelect'},
       {key:'dataPagamento', label:'Data Pgto', type:'date'},
       {key:'valorPago', label:'Valor Pago (R$)', type:'moeda', moedaSimbolo:'R$'},
     ]
@@ -399,6 +426,7 @@ const TABLE_DEFS = {
       {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS},
       {key:'descricao', label:'Descrição', type:'text', obrigatorio:true},
       {key:'valor', label:'Valor (R$)', type:'moeda', moedaSimbolo:'R$', obrigatorio:true},
+      {key:'contaBancariaId', label:'Conta Bancária', type:'contaBancariaSelect'},
     ]
   },
 };

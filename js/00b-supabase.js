@@ -51,12 +51,13 @@ const TABLE_MAP = {
     toDb: (o) => ({
       empresa_id: empresaIdDe(o.empresa), data: dOrNull(o.data), fornecedor:o.fornecedor, descricao:o.descricao,
       centro_custo: dOrNull(o.centroCusto), data_vencimento: dOrNull(o.dataVencimento), data_pagamento: dOrNull(o.dataPagamento),
-      valor_pago: nOrNull(o.valorPago), status: dOrNull(o.status),
+      valor_pago: nOrNull(o.valorPago), status: dOrNull(o.status), conta_bancaria_id: o.contaBancariaId || null,
     }),
     fromDb: (r) => ({
       id:r.id, processoNumero: processoNumeroDe(r.processo_id), empresa: empresaCodigoDe(r.empresa_id),
       data:r.data, fornecedor:r.fornecedor, descricao:r.descricao, centroCusto:r.centro_custo,
       dataVencimento:r.data_vencimento, dataPagamento:r.data_pagamento, valorPago:r.valor_pago, status:r.status,
+      contaBancariaId:r.conta_bancaria_id,
     }),
   },
   contasReceber: {
@@ -64,12 +65,12 @@ const TABLE_MAP = {
     toDb: (o) => ({
       empresa_id: empresaIdDe(o.empresa), cliente_id: o.clienteId || null, ref:o.ref, moeda: dOrNull(o.moeda),
       valor: nOrNull(o.valor), vencimento: dOrNull(o.vencimento), data_recebimento: dOrNull(o.dataRecebimento),
-      valor_recebido: nOrNull(o.valorRecebido),
+      valor_recebido: nOrNull(o.valorRecebido), conta_bancaria_id: o.contaBancariaId || null,
     }),
     fromDb: (r) => ({
       id:r.id, processoNumero: processoNumeroDe(r.processo_id), empresa: empresaCodigoDe(r.empresa_id),
       clienteId:r.cliente_id, ref:r.ref, moeda:r.moeda, valor:r.valor, vencimento:r.vencimento,
-      dataRecebimento:r.data_recebimento, valorRecebido:r.valor_recebido,
+      dataRecebimento:r.data_recebimento, valorRecebido:r.valor_recebido, contaBancariaId:r.conta_bancaria_id,
     }),
   },
   contasPagar: {
@@ -89,16 +90,23 @@ const TABLE_MAP = {
     toDb: (o) => ({
       data: dOrNull(o.data), categoria:o.categoria, descricao:o.descricao, beneficiario:o.beneficiario,
       valor: nOrNull(o.valor), data_pagamento: dOrNull(o.dataPagamento), valor_pago: nOrNull(o.valorPago),
+      empresa_id: empresaIdDe(o.empresa), conta_bancaria_id: o.contaBancariaId || null,
     }),
     fromDb: (r) => ({
       id:r.id, data:r.data, categoria:r.categoria, descricao:r.descricao, beneficiario:r.beneficiario,
       valor:r.valor, dataPagamento:r.data_pagamento, valorPago:r.valor_pago,
+      empresa: empresaCodigoDe(r.empresa_id), contaBancariaId:r.conta_bancaria_id,
     }),
   },
   outrasEntradas: {
     db: 'outras_entradas',
-    toDb: (o) => ({ data: dOrNull(o.data), empresa_id: empresaIdDe(o.empresa), descricao:o.descricao, valor: nOrNull(o.valor) }),
-    fromDb: (r) => ({ id:r.id, data:r.data, empresa: empresaCodigoDe(r.empresa_id), descricao:r.descricao, valor:r.valor }),
+    toDb: (o) => ({ data: dOrNull(o.data), empresa_id: empresaIdDe(o.empresa), descricao:o.descricao, valor: nOrNull(o.valor), conta_bancaria_id: o.contaBancariaId || null }),
+    fromDb: (r) => ({ id:r.id, data:r.data, empresa: empresaCodigoDe(r.empresa_id), descricao:r.descricao, valor:r.valor, contaBancariaId:r.conta_bancaria_id }),
+  },
+  contasBancarias: {
+    db: 'contas_bancarias',
+    toDb: (o) => ({ empresa_id: empresaIdDe(o.empresa), nome:o.nome, moeda:o.moeda, saldo_inicial: nOrNull(o.saldoInicial)||0, saldo_inicial_data: dOrNull(o.saldoInicialData) }),
+    fromDb: (r) => ({ id:r.id, empresa: empresaCodigoDe(r.empresa_id), nome:r.nome, moeda:r.moeda, saldoInicial:r.saldo_inicial, saldoInicialData:r.saldo_inicial_data }),
   },
 };
 
@@ -158,7 +166,7 @@ async function sincronizarContaAPagarDoDespAdm(despAdm){
   const { data: existente } = await sb.from('contas_pagar').select('*').eq('desp_adm_id', despAdm.id).maybeSingle();
   if(precisaCAP){
     const row = {
-      desp_adm_id: despAdm.id, empresa_id: null, processo_id: null,
+      desp_adm_id: despAdm.id, empresa_id: empresaIdDe(despAdm.empresa) || null, processo_id: null,
       vencimento: dOrNull(despAdm.data), fornecedor: despAdm.beneficiario || despAdm.categoria,
       centro_custo: 'DESPESA ADMINISTRATIVA', valor: nOrNull(despAdm.valor) || 0, data_pagamento: null,
     };
