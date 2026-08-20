@@ -303,8 +303,9 @@ const TABLE_DEFS = {
     ]
   },
   processos: {
-    titulo:'Processo', subtitulo:'Cadastro de processos. Data Fech. Câmbio fica vermelha sempre que estiver vazia (mesmo com recebimento total). Status Recebimento fica vermelho enquanto não for "Recebido Total".',
+    titulo:'Processo', subtitulo:'Cadastro de processos. Linha em amarelo = sem Data de Embarque. Data Fech. Câmbio fica vermelha sempre que estiver vazia (mesmo com recebimento total). Status Recebimento fica vermelho enquanto não for "Recebido Total".',
     primeiraColunaFixa: true, filtravel: true,
+    linhaClass: r => !r.dataEmbarque ? 'row-warn' : '',
     colunas:[
       {key:'numero', label:'Nº Processo', type:'text', obrigatorio:true},
       {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS, obrigatorio:true},

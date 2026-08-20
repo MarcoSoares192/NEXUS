@@ -10,7 +10,7 @@ function renderDashboard(){
     <div class="empty-state">
       <div class="big">—</div>
       <div style="font-size:15px;font-weight:600;color:#374151;margin-bottom:4px;">Ainda não há processos cadastrados</div>
-      <div>Cadastre clientes e processos, ou clique em "Carregar exemplo" no topo para ver o sistema em ação.</div>
+      <div>Cadastre clientes e processos para ver o sistema em ação.</div>
     </div>`;
   }
 

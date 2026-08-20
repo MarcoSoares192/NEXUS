@@ -99,6 +99,8 @@ tbody tr:hover{background:#f9fafb;}
 tr.row-alert td{background:#fef2f2!important;}
 tr.row-alert td:first-child{border-left:3px solid #dc2626;}
 td.cell-alert{background:#fee2e2!important;color:#b91c1c;font-weight:700;}
+tr.row-warn td{background:#fffbeb!important;}
+tr.row-warn td:first-child{border-left:3px solid #d97706;}
 
 /* Coluna congelada (ex.: Nº Processo) ao rolar a tabela pra direita */
 .table-frozen-first th:first-child, .table-frozen-first td:first-child{

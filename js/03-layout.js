@@ -86,8 +86,6 @@ function render(){
           <label class="btn btn-ghost btn-sm" style="margin:0;cursor:pointer;">Importar
             <input type="file" accept=".json" style="display:none" onchange="importarJSON(event)">
           </label>
-          <button class="btn btn-ghost btn-sm" onclick="carregarDemo()">Carregar exemplo</button>
-          <button class="btn btn-danger btn-sm" onclick="limparTudo()">Limpar tudo</button>
         </div>
       </div>
       <div class="content" id="content"></div>
