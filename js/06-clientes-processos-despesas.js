@@ -40,7 +40,7 @@ function renderFecharCambio(){
   <div class="hint">Processos com Valor Câmbio ainda em branco (exceto os marcados como SEM DUE). Dê duplo clique na linha, ou clique em Editar, pra abrir o processo e preencher o Valor Câmbio.</div>
   <div class="table-wrap"><table>
     <thead><tr>
-      <th>Nº Processo</th><th>Cliente</th><th>Descrição</th><th>Data Embarque</th>
+      <th>Nº Processo</th><th>Cliente</th><th>Descrição</th>
       <th class="text-right">Valor CH</th><th class="text-right">Valor NEXUS (US$)</th><th></th>
     </tr></thead>
     <tbody>
@@ -49,7 +49,6 @@ function renderFecharCambio(){
           <td><b>${esc(p.numero)}</b></td>
           <td>${esc(clienteNome(p.clienteId))}</td>
           <td>${esc(p.descricao||'—')}</td>
-          <td>${fmtDate(p.dataEmbarque)}</td>
           <td class="text-right mono">${p.valorMoeda? fmtNum(p.valorMoeda) : '—'}</td>
           <td class="text-right mono">US$ ${fmtNum(p.valorNexus||0)}</td>
           <td><button class="btn btn-ghost btn-sm" onclick="openModal('processos','${p.id}')">Editar</button></td>

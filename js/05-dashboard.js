@@ -51,12 +51,15 @@ function renderDashboard(){
   setTimeout(()=>desenharChartPagamentos(pagamentosPorMes), 0);
 
   // ---------- Bloco NEXUS (US$) ----------
+  const statusRecebido = ['Recebido Total','Recebido Parcial'];
+  const statusAReceber = ['Pendente','Em Atraso','-','',null,undefined];
   const receitaTotalNexusUSD = state.processos.reduce((s,p)=>s+(Number(p.valorNexus)||0),0);
-  const carNexus = state.contasReceber.filter(r=>r.empresa==='NEXUS');
-  const recebidoNexusUSD = carNexus.reduce((s,r)=>s+(Number(r.valorRecebido)||0),0);
-  const aReceberNexusUSD = carNexus.filter(r=>!r.dataRecebimento).reduce((s,r)=>s+(Number(r.valor)||0),0);
-  const despesasPagasNexusUSD = state.despesas.filter(d=>d.empresa==='NEXUS' && d.status==='Pago').reduce((s,d)=>s+(Number(d.valorPago)||0),0);
-  const lucroBrutoNexusUSD = receitaTotalNexusUSD - despesasPagasNexusUSD;
+  const recebidoNexusUSD = state.processos.filter(p=>statusRecebido.includes(p.statusRecebimento)).reduce((s,p)=>s+(Number(p.valorNexus)||0),0);
+  const aReceberNexusUSD = state.processos.filter(p=>statusAReceber.includes(p.statusRecebimento)).reduce((s,p)=>s+(Number(p.valorNexus)||0),0);
+  const despesasNexusTodas = state.despesas.filter(d=>d.empresa==='NEXUS').reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  const capNexusManualAberto = state.contasPagar.filter(c=>c.empresa==='NEXUS' && !c.despesaId && !c.despAdmId && !c.dataPagamento).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const totalDespesasNexusUSD = despesasNexusTodas + capNexusManualAberto;
+  const lucroBrutoNexusUSD = receitaTotalNexusUSD - totalDespesasNexusUSD;
   const contaHelmBank = state.contasBancarias.find(c=>c.empresa==='NEXUS' && /helm/i.test(c.nome));
   const contaBBAmericas = state.contasBancarias.find(c=>c.empresa==='NEXUS' && /bb\s*am/i.test(c.nome));
 
@@ -69,14 +72,13 @@ function renderDashboard(){
 
   return `
   <div class="section-title">NEXUS (US$)</div>
-  <div class="grid grid-4" style="margin-bottom:10px;">
+  <div class="grid grid-3" style="margin-bottom:10px;">
     ${kpiCard('Receita Total', 'US$ '+fmtNum(receitaTotalNexusUSD), '', 'var(--accent)')}
-    ${kpiCard('Recebido', 'US$ '+fmtNum(recebidoNexusUSD), '', 'var(--green)')}
-    ${kpiCard('A Receber', 'US$ '+fmtNum(aReceberNexusUSD), '', 'var(--amber)')}
-    ${kpiCard('Despesas Pagas', 'US$ '+fmtNum(despesasPagasNexusUSD), '', 'var(--slate)')}
+    ${kpiCard('Recebido', 'US$ '+fmtNum(recebidoNexusUSD), 'Status Recebido Total/Parcial', 'var(--green)')}
+    ${kpiCard('A Receber', 'US$ '+fmtNum(aReceberNexusUSD), 'Status Pendente/Em Atraso', 'var(--amber)')}
   </div>
   <div class="grid grid-3" style="margin-bottom:18px;">
-    ${kpiCard('Lucro Bruto', 'US$ '+fmtNum(lucroBrutoNexusUSD), '', 'var(--accent2)')}
+    ${kpiCard('Lucro Bruto', 'US$ '+fmtNum(lucroBrutoNexusUSD), 'Receita − despesas pagas e a pagar (NEXUS)', 'var(--accent2)')}
     ${kpiCard('Saldo HELM BANK', contaHelmBank? 'US$ '+fmtNum(saldoContaBancaria(contaHelmBank)) : '—', contaHelmBank?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
     ${kpiCard('Saldo BB Américas', contaBBAmericas? 'US$ '+fmtNum(saldoContaBancaria(contaBBAmericas)) : '—', contaBBAmericas?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
   </div>

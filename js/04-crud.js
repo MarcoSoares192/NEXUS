@@ -343,13 +343,13 @@ const TABLE_DEFS = {
       {key:'dataEmbarque', label:'Data Embarque', type:'date'},
       {key:'moeda', label:'Moeda', type:'select', options:MOEDAS_PROC},
       {key:'valorNexus', label:'Valor NEXUS (US$)', type:'moeda', moedaSimbolo:'US$'},
-      {key:'valorMoeda', label:'Valor CH', type:'moedaOuSemDue', moedaSimbolo:''},
+      {key:'valorMoeda', label:'Valor CH', type:'moedaOuSemDue', moedaSimbolo:'US$'},
       {key:'valorCambio', label:'Valor Câmbio (R$)', type:'moeda', moedaSimbolo:'R$',
         alertaSe: r => !r.valorMoedaSemDue && (r.valorCambio===null||r.valorCambio===undefined||r.valorCambio==='')},
       {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date'},
       {key:'statusRecebimento', label:'Status Recebimento', type:'select', options:STATUS_RECEBIMENTO_PROC,
         alertaSe: r => r.statusRecebimento!=='Recebido Total'},
-      {key:'obs', label:'Observações', type:'textarea'},
+      {key:'dataRecebimento', label:'Data Recebimento', type:'date'},
     ]
   },
   despesas: {
