@@ -25,9 +25,6 @@ function renderDashboard(){
   const margemGeral = receitaTotal? lucroBruto/receitaTotal : 0;
   const emAberto = processos.filter(p=>p.statusRecebimento!=='Recebido Total').reduce((s,p)=>{ const f=procValorFechCambioRS(p); return s+(f||0); },0);
   const emAbertoCount = processos.filter(p=>p.statusRecebimento==='Pendente'||p.statusRecebimento==='Recebido Parcial').length;
-  const hoje = parseDate(todayISO());
-  const em7dias = processos.filter(p=>{ if(!p.dataProntidao) return false; const d=parseDate(p.dataProntidao); const diff=daysBetween(d,hoje); return diff>=0 && diff<=7; });
-  const totalAReceber7d = em7dias.reduce((s,p)=>s+(procAReceberEstUSD(p)||0),0);
 
   // agrupar por cliente
   const porCliente = {};
@@ -137,17 +134,6 @@ function renderDashboard(){
           <td class="text-right">${fmtPct(c.receita? c.lucro/c.receita:0)}</td>
         </tr>
       `).join('') || `<tr><td colspan="7" style="text-align:center;color:#9ca3af;">Sem dados</td></tr>`}
-    </tbody>
-  </table></div>
-
-  <div class="section-title">Prontidão de Carga — Próximos 7 dias</div>
-  <div class="hint">${em7dias.length} processo(s) com prontidão nos próximos 7 dias • Total a receber: US$ ${fmtNum(totalAReceber7d)}</div>
-  <div class="table-wrap"><table>
-    <thead><tr><th>Nº Processo</th><th>Cliente</th><th>Descrição</th><th>Data Prontidão</th><th class="text-right">A Receber (USD)</th></tr></thead>
-    <tbody>
-      ${em7dias.map(p=>`
-        <tr><td>${esc(p.numero)}</td><td>${esc(clienteNome(p.clienteId))}</td><td>${esc(p.descricao||'—')}</td><td>${fmtDate(p.dataProntidao)}</td><td class="text-right mono">US$ ${fmtNum(procAReceberEstUSD(p)||0)}</td></tr>
-      `).join('') || `<tr><td colspan="5" style="text-align:center;color:#9ca3af;">Nenhum processo com prontidão nos próximos 7 dias</td></tr>`}
     </tbody>
   </table></div>
   `;

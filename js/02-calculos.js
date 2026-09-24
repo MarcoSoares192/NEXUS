@@ -4,13 +4,12 @@
 
 // --- PROCESSOS ---
 function procValorFechCambioRS(p){
-  if(p.valorMoeda!=null && p.valorMoeda!=='' && p.taxaCambio!=null && p.taxaCambio!=='' && p.dataFechCambio){
-    return Number(p.valorMoeda) * Number(p.taxaCambio);
-  }
+  if(p.valorMoedaSemDue) return null; // marcado como SEM DUE — não vai para a Challenge Brasil, não entra na conta
+  if(p.valorCambio!=null && p.valorCambio!=='') return Number(p.valorCambio);
   return null; // câmbio ainda em aberto
 }
 function procAReceberEstUSD(p){
-  if(p.valorMoeda==null || p.valorMoeda==='') return null;
+  if(p.valorMoeda==null || p.valorMoeda==='' || p.valorMoedaSemDue) return null;
   const fech = procValorFechCambioRS(p);
   return fech===null ? Number(p.valorMoeda) : 0;
 }
@@ -86,7 +85,6 @@ function calcResultado(){
     let statusProcesso = 'Em abertura';
     if(p.statusRecebimento==='Recebido Total') statusProcesso='Concluído';
     else if(p.dataEmbarque) statusProcesso='Embarcado';
-    else if(p.dataProntidao) statusProcesso='Em prontidão';
     const statusCambio = fech!==null ? 'Fechado' : 'Em aberto';
     return { numero:p.numero, cliente: clienteNome(p.clienteId), statusProcesso, statusCambio,
       receita, recebido, aReceber, totalDespesas, despesasPagas, despesasPendentes, lucro, margem, empresa:p.empresa };

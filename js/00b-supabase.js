@@ -34,15 +34,17 @@ const TABLE_MAP = {
     db: 'processos',
     toDb: (o) => ({
       numero:o.numero, empresa_id: empresaIdDe(o.empresa), cliente_id: o.clienteId || null,
-      descricao:o.descricao, data_abertura: dOrNull(o.dataAbertura), data_prontidao: dOrNull(o.dataProntidao),
+      descricao:o.descricao, data_abertura: dOrNull(o.dataAbertura),
       data_embarque: dOrNull(o.dataEmbarque), moeda: dOrNull(o.moeda), valor_moeda: nOrNull(o.valorMoeda),
-      valor_nexus: nOrNull(o.valorNexus), taxa_cambio: nOrNull(o.taxaCambio), data_fech_cambio: dOrNull(o.dataFechCambio),
+      valor_moeda_sem_due: !!o.valorMoedaSemDue, valor_cambio: nOrNull(o.valorCambio), data_fech_cambio: dOrNull(o.dataFechCambio),
+      valor_nexus: nOrNull(o.valorNexus),
       status_recebimento: dOrNull(o.statusRecebimento), obs:o.obs,
     }),
     fromDb: (r) => ({
       id:r.id, numero:r.numero, empresa: empresaCodigoDe(r.empresa_id), clienteId:r.cliente_id,
-      descricao:r.descricao, dataAbertura:r.data_abertura, dataProntidao:r.data_prontidao, dataEmbarque:r.data_embarque,
-      moeda:r.moeda, valorMoeda:r.valor_moeda, valorNexus:r.valor_nexus, taxaCambio:r.taxa_cambio, dataFechCambio:r.data_fech_cambio,
+      descricao:r.descricao, dataAbertura:r.data_abertura, dataEmbarque:r.data_embarque,
+      moeda:r.moeda, valorMoeda:r.valor_moeda, valorMoedaSemDue:r.valor_moeda_sem_due, valorCambio:r.valor_cambio, dataFechCambio:r.data_fech_cambio,
+      valorNexus:r.valor_nexus,
       statusRecebimento:r.status_recebimento, obs:r.obs,
     }),
   },
@@ -200,7 +202,7 @@ async function sincronizarContaAReceberDoProcesso(p){
     const row = {
       processo_id: p.id, empresa_id: empresaIdDe('NEXUS'), cliente_id: p.clienteId || null,
       ref: 'VALOR NEXUS (auto)', moeda: 'USD', valor: nOrNull(valorParaCAR) || 0,
-      vencimento: dOrNull(p.dataEmbarque || p.dataProntidao),
+      vencimento: dOrNull(p.dataEmbarque),
     };
     if(existente) await sb.from('contas_receber').update(row).eq('id', existente.id);
     else await sb.from('contas_receber').insert(row);

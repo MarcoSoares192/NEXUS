@@ -1,7 +1,7 @@
 // ============================================================
 // MOTOR GENÉRICO DE CRUD (tabela + modal)
 // ============================================================
-function fieldInput(col, value, extra){
+function fieldInput(col, value, extra, dadosAtuais){
   extra = extra || '';
   value = value===undefined||value===null? '' : value;
   const common = `id="f_${col.key}" data-key="${col.key}"`;
@@ -37,6 +37,18 @@ function fieldInput(col, value, extra){
     const raw = (value===''||value===null||value===undefined) ? '' : Number(value).toFixed(2);
     const display = raw===''? '' : fmtMoedaMascara(raw);
     return `<input type="text" inputmode="decimal" ${common} data-raw="${raw}" value="${display}" oninput="maskMoedaInput(this)">`;
+  }
+  if(col.type==='moedaOuSemDue'){
+    const semDue = !!(dadosAtuais && dadosAtuais[col.key+'SemDue']);
+    const raw = (!semDue && value!==''&&value!==null&&value!==undefined) ? Number(value).toFixed(2) : '';
+    const display = raw===''? '' : fmtMoedaMascara(raw);
+    return `
+      <input type="text" inputmode="decimal" id="f_${col.key}" data-key="${col.key}" data-raw="${raw}" value="${display}"
+        oninput="maskMoedaInput(this)" ${semDue?'disabled':''} style="margin-bottom:6px;">
+      <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:12px;color:#6b7280;">
+        <input type="checkbox" id="f_${col.key}_semDue" onchange="toggleSemDue('${col.key}', this.checked)" ${semDue?'checked':''}>
+        SEM DUE — não vai para a Challenge no Brasil (não considerar valor)
+      </label>`;
   }
   if(col.type==='textarea') return `<textarea rows="2" ${common}>${esc(value)}</textarea>`;
   return `<input type="text" ${common} value="${esc(value)}">`;
@@ -85,7 +97,7 @@ function renderModal(){
         ${def.colunas.map(col => `
           <div class="field">
             <label ${tabela==='contasPagar' && col.key==='valor' ? 'id="lbl_valor_cap"' : ''}>${tabela==='contasPagar' && col.key==='valor' ? (dados.empresa==='NEXUS'?'Valor (US$)':'Valor (R$)') : col.label}${col.obrigatorio?' *':''}</label>
-            ${fieldInput(col, dados[col.key], (tabela==='contasPagar' && col.key==='empresa') ? `onchange="atualizarLabelValorCAP(this.value)"` : '')}
+            ${fieldInput(col, dados[col.key], (tabela==='contasPagar' && col.key==='empresa') ? `onchange="atualizarLabelValorCAP(this.value)"` : '', dados)}
           </div>
         `).join('')}
         <div class="modal-actions">
@@ -101,6 +113,12 @@ function atualizarLabelValorCAP(empresa){
   const lbl = document.getElementById('lbl_valor_cap');
   if(lbl) lbl.textContent = (empresa==='NEXUS' ? 'Valor (US$)' : 'Valor (R$)') + ' *';
 }
+function toggleSemDue(key, checked){
+  const input = document.getElementById('f_'+key);
+  if(!input) return;
+  input.disabled = checked;
+  if(checked){ input.value=''; input.dataset.raw=''; }
+}
 
 async function salvarModal(){
   const { tabela, id, def } = ui.modal;
@@ -112,6 +130,12 @@ async function salvarModal(){
     let v = el.value;
     if(col.type==='number') v = v===''? '' : Number(v);
     if(col.type==='moeda') v = (el.dataset.raw===undefined || el.dataset.raw==='') ? '' : Number(el.dataset.raw);
+    if(col.type==='moedaOuSemDue'){
+      const semDueEl = document.getElementById('f_'+col.key+'_semDue');
+      const semDue = semDueEl ? semDueEl.checked : false;
+      novo[col.key+'SemDue'] = semDue;
+      v = semDue ? '' : ((el.dataset.raw===undefined || el.dataset.raw==='') ? '' : Number(el.dataset.raw));
+    }
     if(col.obrigatorio && !v && v!==0) erro = `Preencha o campo "${col.label}".`;
     novo[col.key] = v;
   });
@@ -261,7 +285,7 @@ function renderCrudTable(tabela, colunasExtras){
     </thead>
     <tbody>
       ${linhas.length ? linhas.map(r=>`
-        <tr class="${def.linhaClass ? def.linhaClass(r) : ''}">
+        <tr class="${def.linhaClass ? def.linhaClass(r) : ''}" ${def.dblClickEdit ? `ondblclick="openModal('${tabela}','${r.id}')" style="cursor:pointer;"` : ''}>
           ${colunas.map(c=>`<td class="${(c.alertaSeVazio && !r[c.key]) || (c.alertaSe && c.alertaSe(r)) ? 'cell-alert' : ''}">${formatCellValue(c, r[c.key], r)}</td>`).join('')}
           ${(colunasExtras||[]).map(c=>`<td>${c.render(r)}</td>`).join('')}
           <td>
@@ -280,6 +304,11 @@ function formatCellValue(col, v, row){
     if(v===''||v===null||v===undefined) return '—';
     const simbolo = col.moedaPorEmpresa ? (row && row.empresa==='NEXUS' ? 'US$' : 'R$') : (col.moedaSimbolo || 'R$');
     return `<span class="mono">${simbolo} ${fmtMoedaMascara(Number(v).toFixed(2))}</span>`;
+  }
+  if(col.type==='moedaOuSemDue'){
+    if(row && row[col.key+'SemDue']) return `<span class="badge badge-slate">SEM DUE</span>`;
+    if(v===''||v===null||v===undefined) return '—';
+    return `<span class="mono">${col.moedaSimbolo||''} ${fmtMoedaMascara(Number(v).toFixed(2))}</span>`;
   }
   if(col.type==='clienteSelect') return esc(clienteNome(v));
   if(col.type==='contaBancariaSelect'){
@@ -303,22 +332,21 @@ const TABLE_DEFS = {
     ]
   },
   processos: {
-    titulo:'Processo', subtitulo:'Cadastro de processos. Linha em amarelo = sem Data de Embarque. Data Fech. Câmbio fica vermelha sempre que estiver vazia (mesmo com recebimento total). Status Recebimento fica vermelho enquanto não for "Recebido Total".',
-    primeiraColunaFixa: true, filtravel: true,
+    titulo:'Processo', subtitulo:'Cadastro de processos. Duplo clique na linha abre para editar. Linha em amarelo = sem Data de Embarque. Valor Câmbio fica vermelho quando vazio (processo em Fechar Câmbio) — exceto se Valor CH estiver marcado como SEM DUE. Status Recebimento fica vermelho enquanto não for "Recebido Total".',
+    primeiraColunaFixa: true, filtravel: true, dblClickEdit: true,
     linhaClass: r => !r.dataEmbarque ? 'row-warn' : '',
     colunas:[
       {key:'numero', label:'Nº Processo', type:'text', obrigatorio:true},
-      {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS, obrigatorio:true},
       {key:'clienteId', label:'Cliente', type:'clienteSelect', obrigatorio:true},
       {key:'descricao', label:'Descrição', type:'text'},
       {key:'dataAbertura', label:'Data Abertura', type:'date'},
-      {key:'dataProntidao', label:'Data Prontidão', type:'date'},
       {key:'dataEmbarque', label:'Data Embarque', type:'date'},
       {key:'moeda', label:'Moeda', type:'select', options:MOEDAS_PROC},
-      {key:'valorMoeda', label:'Valor Moeda Estrang.', type:'moeda', moedaSimbolo:''},
       {key:'valorNexus', label:'Valor NEXUS (US$)', type:'moeda', moedaSimbolo:'US$'},
-      {key:'taxaCambio', label:'Taxa Câmbio', type:'number'},
-      {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date', alertaSeVazio:true},
+      {key:'valorMoeda', label:'Valor CH', type:'moedaOuSemDue', moedaSimbolo:''},
+      {key:'valorCambio', label:'Valor Câmbio (R$)', type:'moeda', moedaSimbolo:'R$',
+        alertaSe: r => !r.valorMoedaSemDue && (r.valorCambio===null||r.valorCambio===undefined||r.valorCambio==='')},
+      {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date'},
       {key:'statusRecebimento', label:'Status Recebimento', type:'select', options:STATUS_RECEBIMENTO_PROC,
         alertaSe: r => r.statusRecebimento!=='Recebido Total'},
       {key:'obs', label:'Observações', type:'textarea'},

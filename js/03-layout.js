@@ -16,6 +16,7 @@ const NAV = [
   {group:'Financeiro', items:[
     {id:'contasReceber', label:'Contas a Receber'},
     {id:'contasPagar', label:'Contas a Pagar'},
+    {id:'fecharCambio', label:'Fechar Câmbio'},
     {id:'despAdm', label:'Desp. Administrativas'},
     {id:'fluxoCaixa', label:'Fluxo de Caixa'},
     {id:'dreGerencial', label:'DRE Gerencial'},
@@ -41,6 +42,7 @@ const MODULE_TITLES = {
   resultadoConsolidado:['Resultado Consolidado','Visão do grupo (NEXUS + CHALLENGE) por processo, com o resultado operacional isolado da CHALLENGE (transfer pricing)'],
   contasReceber:['Contas a Receber','Títulos a receber por proforma/embarque, multimoeda'],
   contasPagar:['Contas a Pagar','Títulos de fornecedores pendentes'],
+  fecharCambio:['Fechar Câmbio','Processos com Valor Câmbio ainda em branco — dê duplo clique numa linha pra abrir e preencher'],
   despAdm:['Despesas Administrativas','Folha, pró-labore e despesas fixas da operação'],
   fluxoCaixa:['Fluxo de Caixa','Visão mensal alimentada automaticamente por Processos, Contas a Pagar e Desp. Administrativas'],
   dreGerencial:['DRE Gerencial Mensal','Gerado automaticamente a partir do Fluxo de Caixa'],
@@ -103,7 +105,7 @@ function renderContent(){
     dashboard: renderDashboard, clientes: renderClientes, cotacoes: renderCotacoesModulo, processos: renderProcessos,
     despesasNexus: renderDespesasNexus, despesasCH: renderDespesasCH, resultado: renderResultado,
     resultadoConsolidado: renderResultadoConsolidado, contasReceber: renderContasReceber,
-    contasPagar: renderContasPagar, despAdm: renderDespAdm, fluxoCaixa: renderFluxoCaixa,
+    contasPagar: renderContasPagar, fecharCambio: renderFecharCambio, despAdm: renderDespAdm, fluxoCaixa: renderFluxoCaixa,
     dreGerencial: renderDRE, cobranca: renderCobranca, checklists: renderChecklists,
     contasBancarias: renderContasBancarias, empresas: renderEmpresas,
   };

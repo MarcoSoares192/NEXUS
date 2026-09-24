@@ -63,7 +63,7 @@ function calcResultadoGrupoPorProcesso(){
       .reduce((s,d)=>s+(Number(d.valorPago)||0),0);
     const despesasChallengeRS = state.despesas.filter(d=>d.processoNumero===p.numero && d.empresa==='CHALLENGE' && d.status==='Pago')
       .reduce((s,d)=>s+(Number(d.valorPago)||0),0);
-    const taxa = Number(p.taxaCambio)||0;
+    const taxa = (p.valorCambio && p.valorMoeda && !p.valorMoedaSemDue) ? (Number(p.valorCambio)/Number(p.valorMoeda)) : 0;
     const valorNexus = Number(p.valorNexus)||0;
     const resultadoOperacionalChallengeRS = cambioRecebidoChallengeRS===null ? null : (cambioRecebidoChallengeRS - despesasChallengeRS);
     const resultadoNexusUSD = (taxa>0 && resultadoOperacionalChallengeRS!==null)

@@ -405,8 +405,8 @@ async function gerarVendaDeCotacao(id){
   try{
     const novoProcesso = await dbInserir('processos', {
       numero, empresa: c.empresa, clienteId: c.clienteId, descricao,
-      dataAbertura: todayISO(), dataProntidao:'', dataEmbarque:'',
-      moeda: c.moeda, valorMoeda: t.valorFatura, taxaCambio:'', dataFechCambio:'',
+      dataAbertura: todayISO(), dataEmbarque:'',
+      moeda: c.moeda, valorMoeda: t.valorFatura, valorCambio:'', dataFechCambio:'',
       statusRecebimento:'Pendente', obs: `Gerado a partir da cotação ${c.codigo}`,
     });
     state.processos.push(novoProcesso);

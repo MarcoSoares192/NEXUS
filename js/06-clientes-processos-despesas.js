@@ -31,6 +31,35 @@ function renderDespesasPorEmpresa(tabela, empresa, simbolo){
   ${renderCrudTable(tabela, extras)}
   `;
 }
+function renderFecharCambio(){
+  const pendentes = state.processos.filter(p => !p.valorMoedaSemDue && (p.valorCambio===null||p.valorCambio===undefined||p.valorCambio===''));
+  if(!pendentes.length){
+    return `<div class="empty-state"><div class="big">✓</div><div>Nenhum processo com Valor Câmbio em aberto. Tudo fechado.</div></div>`;
+  }
+  return `
+  <div class="hint">Processos com Valor Câmbio ainda em branco (exceto os marcados como SEM DUE). Dê duplo clique na linha, ou clique em Editar, pra abrir o processo e preencher o Valor Câmbio.</div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>Nº Processo</th><th>Cliente</th><th>Descrição</th><th>Data Embarque</th>
+      <th class="text-right">Valor CH</th><th class="text-right">Valor NEXUS (US$)</th><th></th>
+    </tr></thead>
+    <tbody>
+      ${pendentes.map(p=>`
+        <tr ondblclick="openModal('processos','${p.id}')" style="cursor:pointer;">
+          <td><b>${esc(p.numero)}</b></td>
+          <td>${esc(clienteNome(p.clienteId))}</td>
+          <td>${esc(p.descricao||'—')}</td>
+          <td>${fmtDate(p.dataEmbarque)}</td>
+          <td class="text-right mono">${p.valorMoeda? fmtNum(p.valorMoeda) : '—'}</td>
+          <td class="text-right mono">US$ ${fmtNum(p.valorNexus||0)}</td>
+          <td><button class="btn btn-ghost btn-sm" onclick="openModal('processos','${p.id}')">Editar</button></td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table></div>
+  `;
+}
+
 function renderContasBancarias(){
   const extras = [
     { label:'Saldo Atual', render: c => {

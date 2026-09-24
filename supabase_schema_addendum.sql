@@ -76,3 +76,10 @@ insert into contas_bancarias (empresa_id, nome, moeda)
   select id, 'BB AMÉRICAS', 'USD' from empresas where codigo='NEXUS';
 insert into contas_bancarias (empresa_id, nome, moeda)
   select id, 'BANCO DO BRASIL', 'BRL' from empresas where codigo='CHALLENGE';
+
+-- ============================================================
+-- Processos: Valor Câmbio manual (substitui o cálculo por Taxa Câmbio)
+-- + marcação "SEM DUE" no Valor CH (processo que não vai para a Challenge)
+-- ============================================================
+alter table processos add column valor_cambio numeric(14,2);
+alter table processos add column valor_moeda_sem_due boolean not null default false;
