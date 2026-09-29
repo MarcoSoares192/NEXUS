@@ -355,7 +355,7 @@ const TABLE_DEFS = {
   despesas: {
     titulo:'Despesa', subtitulo:'Lance despesas assim que surgirem. Saldo e status ficam vinculados ao processo.',
     colunas:[
-      {key:'processoNumero', label:'Nº Processo', type:'processoSelect', obrigatorio:true, placeholderAdm:true},
+      {key:'processoNumero', label:'Nº Processo', type:'processoSelect', placeholderAdm:true},
       {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS},
       {key:'data', label:'Data', type:'date'},
       {key:'fornecedor', label:'Fornecedor', type:'text'},
@@ -371,7 +371,7 @@ const TABLE_DEFS = {
     titulo:'Despesa (NEXUS)', tabelaReal:'despesas', empresaFixa:'NEXUS', filtravel: true,
     subtitulo:'Despesas pagas pela NEXUS (matriz nos EUA). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo. A Conta Bancária alimenta o Saldo Bancário do Dashboard.',
     colunas:[
-      {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', obrigatorio:true, placeholderAdm:true},
+      {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', placeholderAdm:true},
       {key:'data', label:'Data', type:'date'},
       {key:'fornecedor', label:'Fornecedor', type:'text'},
       {key:'descricao', label:'Descrição', type:'text'},
@@ -386,7 +386,7 @@ const TABLE_DEFS = {
     titulo:'Despesa (CHALLENGE)', tabelaReal:'despesas', empresaFixa:'CHALLENGE', filtravel: true,
     subtitulo:'Despesas pagas pela CHALLENGE (trading operacional no Brasil). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo. A Conta Bancária alimenta o Saldo Bancário do Dashboard.',
     colunas:[
-      {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', obrigatorio:true, placeholderAdm:true},
+      {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', placeholderAdm:true},
       {key:'data', label:'Data', type:'date'},
       {key:'fornecedor', label:'Fornecedor', type:'text'},
       {key:'descricao', label:'Descrição', type:'text'},
