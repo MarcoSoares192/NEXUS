@@ -19,10 +19,12 @@ function fieldInput(col, value, extra, dadosAtuais){
     </select>`;
   }
   if(col.type==='processoSelect'){
-    return `<select ${common}>
-      <option value="">${col.placeholderAdm? 'ADMINISTRATIVO (sem processo vinculado)' : '—'}</option>
-      ${state.processos.map(p=>`<option value="${esc(p.numero)}" ${String(value)===String(p.numero)?'selected':''}>${esc(p.numero)} — ${esc(clienteNome(p.clienteId))}</option>`).join('')}
-    </select>`;
+    const dlId = 'dl_'+col.key;
+    return `<input type="text" ${common} list="${dlId}" value="${esc(value)}" autocomplete="off"
+      placeholder="${col.placeholderAdm? 'Digite o nº do processo (em branco = ADMINISTRATIVO)' : 'Digite o nº do processo'}">
+    <datalist id="${dlId}">
+      ${state.processos.map(p=>`<option value="${esc(p.numero)}">${esc(p.numero)} — ${esc(clienteNome(p.clienteId))}</option>`).join('')}
+    </datalist>`;
   }
   if(col.type==='contaBancariaSelect'){
     const opcoes = col.empresaFiltroFixo ? state.contasBancarias.filter(c=>c.empresa===col.empresaFiltroFixo) : state.contasBancarias;
@@ -137,6 +139,9 @@ async function salvarModal(){
       v = semDue ? '' : ((el.dataset.raw===undefined || el.dataset.raw==='') ? '' : Number(el.dataset.raw));
     }
     if(col.obrigatorio && !v && v!==0) erro = `Preencha o campo "${col.label}".`;
+    if(col.type==='processoSelect' && v && !state.processos.some(p=>p.numero===v)){
+      erro = `Nº de processo "${v}" não encontrado. Selecione uma opção da lista de sugestões.`;
+    }
     novo[col.key] = v;
   });
   if(def.empresaFixa) novo.empresa = def.empresaFixa;
@@ -372,7 +377,6 @@ const TABLE_DEFS = {
     subtitulo:'Despesas pagas pela NEXUS (matriz nos EUA). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo. A Conta Bancária alimenta o Saldo Bancário do Dashboard.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', placeholderAdm:true},
-      {key:'data', label:'Data', type:'date'},
       {key:'fornecedor', label:'Fornecedor', type:'text'},
       {key:'descricao', label:'Descrição', type:'text'},
       {key:'centroCusto', label:'Centro de Custo', type:'select', options:CENTROS_CUSTO},
@@ -387,7 +391,6 @@ const TABLE_DEFS = {
     subtitulo:'Despesas pagas pela CHALLENGE (trading operacional no Brasil). Selecione o processo vinculado ou "ADMINISTRATIVO" para despesas sem processo. A Conta Bancária alimenta o Saldo Bancário do Dashboard.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo / Administrativo', type:'processoSelect', placeholderAdm:true},
-      {key:'data', label:'Data', type:'date'},
       {key:'fornecedor', label:'Fornecedor', type:'text'},
       {key:'descricao', label:'Descrição', type:'text'},
       {key:'centroCusto', label:'Centro de Custo', type:'select', options:CENTROS_CUSTO},
