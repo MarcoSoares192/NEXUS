@@ -21,10 +21,10 @@ function nextProcessoNumero(dataISO){
   const ano2 = anoCurto(dataISO);
   let max = 0;
   state.processos.forEach(p=>{
-    const m = /^(\d{2})\/(\d+)/.exec(p.numero||'');
+    const m = /^NEXUS(\d{2})\/(\d+)/.exec(p.numero||'');
     if(m && m[1]===ano2) max = Math.max(max, parseInt(m[2],10));
   });
-  return `${ano2}/${String(max+1).padStart(3,'0')}`;
+  return `NEXUS${ano2}/${String(max+1).padStart(3,'0')}`;
 }
 
 function fmtCot(v, moeda){ if(v===null||v===undefined||v==='') return '—'; return `${moeda||'USD'} ${Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`; }
