@@ -33,7 +33,7 @@ const TABLE_MAP = {
   processos: {
     db: 'processos',
     toDb: (o) => ({
-      numero:o.numero, empresa_id: empresaIdDe(o.empresa), cliente_id: o.clienteId || null,
+      numero:o.numero, empresa_id: empresaIdDe(o.empresa || 'NEXUS'), cliente_id: o.clienteId || null,
       descricao:o.descricao, data_abertura: dOrNull(o.dataAbertura),
       data_embarque: dOrNull(o.dataEmbarque), moeda: dOrNull(o.moeda), valor_moeda: nOrNull(o.valorMoeda),
       valor_moeda_sem_due: !!o.valorMoedaSemDue, valor_cambio: nOrNull(o.valorCambio), data_fech_cambio: dOrNull(o.dataFechCambio),
