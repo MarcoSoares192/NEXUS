@@ -10,7 +10,19 @@ function renderProcessos(){
     { label:'Valor Fech. Câmbio (R$)', render: p => { const v=procValorFechCambioRS(p); return v===null? '<span class="small-muted">Em aberto</span>' : `<span class="mono">${fmtMoney(v)}</span>`; } },
     { label:'A Receber Est. (USD)', render: p => { const v=procAReceberEstUSD(p); return v===null? '—' : `<span class="mono">US$ ${fmtNum(v)}</span>`; } },
   ];
-  return renderCrudTable('processos', extras);
+  const def = TABLE_DEFS.processos;
+  const linhasBase = porEmpresa(state.processos);
+  const linhasFiltradas = def.filtravel ? linhasComFiltro('processos', def.colunas, linhasBase) : linhasBase;
+  const totalProcessos = linhasFiltradas.length;
+  const totalAtraso = linhasFiltradas.filter(p=>p.statusRecebimento==='Pendente').length;
+  const totalAEmbarcar = linhasFiltradas.filter(p=>!p.dataEmbarque).length;
+  const kpis = `
+  <div class="grid grid-3" style="margin-bottom:14px;">
+    ${kpiCard('Nº Processos', totalProcessos, '', 'var(--accent)')}
+    ${kpiCard('Atraso', totalAtraso, 'Status Recebimento = Pendente', 'var(--amber)')}
+    ${kpiCard('A Embarcar', totalAEmbarcar, 'Sem Data de Embarque', 'var(--slate)')}
+  </div>`;
+  return kpis + renderCrudTable('processos', extras);
 }
 
 function renderDespesasPorEmpresa(tabela, empresa, simbolo){

@@ -6,7 +6,10 @@ function fieldInput(col, value, extra, dadosAtuais){
   value = value===undefined||value===null? '' : value;
   const common = `id="f_${col.key}" data-key="${col.key}"`;
   if(col.type==='select'){
-    const opts = col.options || [];
+    let opts = col.options || [];
+    if(col.key==='statusRecebimento' && dadosAtuais && dadosAtuais.statusRecebimento==='Em Atraso'){
+      opts = opts.filter(o=> o==='Em Atraso' || o==='Pendente');
+    }
     return `<select ${common} ${extra}>
       <option value="">—</option>
       ${opts.map(o=>`<option value="${esc(o)}" ${String(value)===String(o)?'selected':''}>${esc(o)}</option>`).join('')}
@@ -80,7 +83,7 @@ function openModal(tabela, id){
   const tabelaReal = def.tabelaReal || tabela;
   let dados = id ? state[tabelaReal].find(r=>r.id===id) : {};
   if(!id && tabela==='processos' && typeof nextProcessoNumero==='function'){
-    dados = Object.assign({ numero: nextProcessoNumero(todayISO()) }, dados);
+    dados = Object.assign({ numero: nextProcessoNumero(todayISO()), statusRecebimento: 'Pendente' }, dados);
   }
   if(!id && def.empresaFixa){ dados = Object.assign({ empresa: def.empresaFixa }, dados); }
   ui.modal = { tabela, id: id||null, def, dados: Object.assign({}, dados) };
@@ -215,7 +218,20 @@ let uiFiltros = {}; // { tabela: { colKey: valor } }
 
 function aplicarFiltroColuna(tabela, key, valor){
   (uiFiltros[tabela] ||= {})[key] = valor;
+  const ativo = document.activeElement;
+  const ativoId = ativo && ativo.id;
+  const selStart = ativo && typeof ativo.selectionStart==='number' ? ativo.selectionStart : null;
+  const selEnd = ativo && typeof ativo.selectionEnd==='number' ? ativo.selectionEnd : null;
   render();
+  if(ativoId){
+    const el = document.getElementById(ativoId);
+    if(el){
+      el.focus();
+      if(selStart!=null && el.setSelectionRange){
+        try{ el.setSelectionRange(selStart, selEnd); }catch(e){}
+      }
+    }
+  }
 }
 function limparFiltrosColuna(tabela){
   uiFiltros[tabela] = {};
@@ -250,7 +266,7 @@ function renderFiltroCelula(tabela, c, linhasBase){
       ${comNome.map(o=>`<option value="${o.id}" ${atual===o.id?'selected':''}>${esc(o.nome)}</option>`).join('')}
     </select>`;
   }
-  return `<input type="text" placeholder="Buscar..." value="${esc(atual)}" oninput="aplicarFiltroColuna('${tabela}','${c.key}',this.value)" class="filtro-input">`;
+  return `<input type="text" id="filtro_${tabela}_${c.key}" placeholder="Buscar..." value="${esc(atual)}" oninput="aplicarFiltroColuna('${tabela}','${c.key}',this.value)" class="filtro-input">`;
 }
 
 function renderCrudTable(tabela, colunasExtras){
@@ -303,6 +319,9 @@ function renderCrudTable(tabela, colunasExtras){
   </table></div>`;
 }
 function formatCellValue(col, v, row){
+  if(row && row.valorMoedaSemDue && (col.key==='dataFechCambio' || col.key==='valorCambio')){
+    return `<span class="badge badge-slate">SEM DUE</span>`;
+  }
   if(col.type==='date') return fmtDate(v);
   if(col.type==='number') return v===''||v===null||v===undefined? '—' : fmtNum(v);
   if(col.type==='moeda'){
