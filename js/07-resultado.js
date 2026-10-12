@@ -69,9 +69,11 @@ function calcResultadoGrupoPorProcesso(){
     const resultadoNexusUSD = (taxa>0 && resultadoOperacionalChallengeRS!==null)
       ? (valorNexus - despesasNexusUSD + (resultadoOperacionalChallengeRS/taxa)) : null;
     const margemPct = (resultadoNexusUSD!==null && valorNexus>0) ? (resultadoNexusUSD/valorNexus) : null;
+    const lucroNexusUSD = valorNexus - despesasNexusUSD;
+    const margemNexusPct = valorNexus>0 ? (lucroNexusUSD/valorNexus) : null;
     return { numero:p.numero, cliente: clienteNome(p.clienteId), empresa:p.empresa,
       valorNexus, cambioRecebidoChallengeRS, despesasNexusUSD, despesasChallengeRS,
-      resultadoNexusUSD, resultadoOperacionalChallengeRS, margemPct };
+      resultadoNexusUSD, resultadoOperacionalChallengeRS, margemPct, lucroNexusUSD, margemNexusPct };
   });
 }
 
@@ -92,11 +94,13 @@ function renderResultadoConsolidado(){
     <thead><tr>
       <th>Nº Processo</th><th>Cliente</th>
       <th class="text-right">Valor NEXUS (US$)</th>
-      <th class="text-right">Câmbio p/ CHALLENGE (R$)</th>
       <th class="text-right">Desp. NEXUS (US$)</th>
+      <th class="text-right">Lucro NEXUS (US$)</th>
+      <th class="text-right">Margem NEXUS (%)</th>
+      <th class="text-right">Câmbio p/ CHALLENGE (R$)</th>
       <th class="text-right">Desp. CHALLENGE (R$)</th>
-      <th class="text-right">Result. Operacional CHALLENGE (R$)</th>
-      <th class="text-right">Resultado NEXUS (US$)</th>
+      <th class="text-right">Resultado CH (R$)</th>
+      <th class="text-right">Resultado Consolidado (USD)</th>
       <th class="text-right">Margem %</th>
     </tr></thead>
     <tbody>
@@ -105,8 +109,10 @@ function renderResultadoConsolidado(){
           <td><b>${esc(r.numero)}</b></td>
           <td>${esc(r.cliente)}</td>
           <td class="text-right mono">US$ ${fmtNum(r.valorNexus)}</td>
-          <td class="text-right mono">${r.cambioRecebidoChallengeRS===null? '<span class="small-muted">Câmbio em aberto</span>' : fmtMoney(r.cambioRecebidoChallengeRS)}</td>
           <td class="text-right mono">US$ ${fmtNum(r.despesasNexusUSD)}</td>
+          <td class="text-right mono" style="font-weight:700;color:${r.lucroNexusUSD>=0?'#15803d':'#b91c1c'}">US$ ${fmtNum(r.lucroNexusUSD)}</td>
+          <td class="text-right mono" style="font-weight:700;color:${r.margemNexusPct>=0?'#15803d':'#b91c1c'}">${r.margemNexusPct===null?'—':fmtPct(r.margemNexusPct)}</td>
+          <td class="text-right mono">${r.cambioRecebidoChallengeRS===null? '<span class="small-muted">Câmbio em aberto</span>' : fmtMoney(r.cambioRecebidoChallengeRS)}</td>
           <td class="text-right mono">${fmtMoney(r.despesasChallengeRS)}</td>
           <td class="text-right mono" style="font-weight:700;color:${r.resultadoOperacionalChallengeRS>=0?'#15803d':'#b91c1c'}">${r.resultadoOperacionalChallengeRS===null?'—':fmtMoney(r.resultadoOperacionalChallengeRS)}</td>
           <td class="text-right mono" style="font-weight:700;color:${r.resultadoNexusUSD>=0?'#15803d':'#b91c1c'}">${r.resultadoNexusUSD===null?'—':'US$ '+fmtNum(r.resultadoNexusUSD)}</td>
