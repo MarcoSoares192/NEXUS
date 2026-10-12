@@ -75,8 +75,8 @@ function calcResultado(){
     const receita = fech===null? 0 : fech;
     const recebido = receita; // mesma lógica do Excel original
     const aReceber = procAReceberEstUSD(p) || 0;
-    const despesasProc = state.despesas.filter(d=>d.processoNumero===p.numero);
-    const capProc = state.contasPagar.filter(c=>c.processoNumero===p.numero);
+    const despesasProc = state.despesas.filter(d=>d.processoNumero===p.numero && d.empresa==='CHALLENGE');
+    const capProc = state.contasPagar.filter(c=>c.processoNumero===p.numero && c.empresa==='CHALLENGE');
     const totalDespesas = despesasProc.reduce((s,d)=>s+(Number(d.valorPago)||0),0) + capProc.reduce((s,c)=>s+(Number(c.valor)||0),0);
     const despesasPagas = despesasProc.reduce((s,d)=>s+(Number(d.valorPago)||0),0) + capProc.filter(c=>c.dataPagamento).reduce((s,c)=>s+(Number(c.valor)||0),0);
     const despesasPendentes = totalDespesas - despesasPagas;
