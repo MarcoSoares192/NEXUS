@@ -259,7 +259,11 @@ function linhasComFiltro(tabela, colunas, linhas){
     if(!c) return true;
     if(f===FILTRO_VAZIO) return celulaVazia(c, r);
     if(c.type==='select' || c.type==='clienteSelect') return String(r[key]||'')===f;
-    return String(r[key]||'').toLowerCase().includes(f.toLowerCase());
+    // datas: busca pelo formato exibido (dd/mm/aaaa); valores em moeda: pelo valor formatado (ex.: 18.900,00)
+    let texto = String(r[key]===null||r[key]===undefined ? '' : r[key]);
+    if(c.type==='date' && r[key]) texto += ' ' + fmtDate(r[key]);
+    if((c.type==='moeda'||c.type==='moedaOuSemDue') && r[key]!==''&&r[key]!==null&&r[key]!==undefined && !isNaN(r[key])) texto += ' ' + fmtMoedaMascara(Number(r[key]).toFixed(2));
+    return texto.toLowerCase().includes(f.trim().toLowerCase());
   }));
 }
 function renderFiltroCelula(tabela, c, linhasBase){
