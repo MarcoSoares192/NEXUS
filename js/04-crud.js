@@ -451,6 +451,7 @@ const TABLE_DEFS = {
     ]
   },
   contasReceber: {
+    filtravel: true,
     titulo:'Título a Receber', subtitulo:'Títulos a receber por proforma/embarque. Lance previsto na proforma; baixe com Data de Recebimento. Moedas separadas, sem conversão. Os títulos com "VALOR NEXUS (auto)" na referência são gerados automaticamente pelos Processos pendentes — não precisam ser criados manualmente.',
     colunas:[
       {key:'processoNumero', label:'Nº Processo', type:'processoSelect'},

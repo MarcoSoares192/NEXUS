@@ -2,16 +2,23 @@
 // CONTAS A RECEBER / CONTAS A PAGAR / DESP. ADMINISTRATIVAS
 // ============================================================
 function renderContasReceber(){
-  const linhas = porEmpresa(state.contasReceber);
+  const def = TABLE_DEFS.contasReceber;
+  const base = porEmpresa(state.contasReceber);
+  const linhas = linhasComFiltro('contasReceber', def.colunas, base); // respeita filtros ativos (ex.: cliente)
+  const abertas = linhas.filter(r=>!r.dataRecebimento);
+  const nProcessos = new Set(abertas.map(r=>r.processoNumero || ('t'+r.id))).size;
   const porMoeda = {};
-  MOEDAS_CAR.forEach(m=> porMoeda[m] = linhas.filter(r=>r.moeda===m && !r.dataRecebimento).reduce((s,r)=>s+(carSaldoAberto(r)||0),0));
+  MOEDAS_CAR.forEach(m=> porMoeda[m] = abertas.filter(r=>r.moeda===m).reduce((s,r)=>s+(carSaldoAberto(r)||0),0));
   const extras = [
     { label:'Saldo em Aberto', render: r => { const v=carSaldoAberto(r); return v===null?'—': `<span class="mono">${fmtNum(v)}</span>`; } },
     { label:'Status', render: r => badge(carStatus(r), carStatusBadge(carStatus(r))) },
   ];
+  const cards = MOEDAS_CAR.map(m => m==='EUR'
+    ? kpiCard('Nº de Processos', nProcessos, 'a receber', 'var(--accent)')
+    : kpiCard('Em aberto — '+m, fmtNum(porMoeda[m])+' '+m, '', 'var(--accent)'));
   return `
   <div class="grid grid-4" style="margin-bottom:18px;">
-    ${MOEDAS_CAR.map(m=>kpiCard('Em aberto — '+m, fmtNum(porMoeda[m])+' '+m, '', 'var(--accent)')).join('')}
+    ${cards.join('')}
   </div>
   ${renderCrudTable('contasReceber', extras)}
   `;

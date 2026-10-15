@@ -195,8 +195,9 @@ async function reconciliarContasAReceber(){
 // Processo pendente/parcial: o Valor NEXUS aparece automaticamente em Contas a Receber
 // (título "VALOR NEXUS (auto)"). Some sozinho quando o processo é dado como recebido.
 async function sincronizarContaAReceberDoProcesso(p){
-  const valorParaCAR = p.valorNexus || p.valorMoeda;
-  const precisaCAR = (p.statusRecebimento==='Pendente' || p.statusRecebimento==='Recebido Parcial') && valorParaCAR;
+  const valorParaCAR = p.valorNexus || p.valorMoeda || 0;
+  // Entra em Contas a Receber tudo que NÃO for "Recebido Total" ou que estiver sem Data de Recebimento.
+  const precisaCAR = (p.statusRecebimento!=='Recebido Total') || !p.dataRecebimento;
   const { data: existente } = await sb.from('contas_receber').select('*').eq('processo_id', p.id).eq('ref','VALOR NEXUS (auto)').maybeSingle();
   if(precisaCAR){
     const row = {
