@@ -384,7 +384,7 @@ const TABLE_DEFS = {
       {key:'dataEmbarque', label:'Data Embarque', type:'date', filtroVazio:true},
       {key:'moeda', label:'Moeda', type:'select', options:MOEDAS_PROC},
       {key:'valorNexus', label:'Valor NEXUS (US$)', type:'moeda', moedaSimbolo:'US$'},
-      {key:'valorMoeda', label:'Valor CH', type:'moedaOuSemDue', moedaSimbolo:'US$', filtroVazio:true},
+      {key:'valorMoeda', label:'Valor CH', type:'moedaOuSemDue', moedaSimbolo:'US$'},
       {key:'valorCambio', label:'Valor Câmbio (R$)', type:'moeda', moedaSimbolo:'R$', filtroVazio:true,
         alertaSe: r => !r.valorMoedaSemDue && (r.valorCambio===null||r.valorCambio===undefined||r.valorCambio==='')},
       {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date'},
