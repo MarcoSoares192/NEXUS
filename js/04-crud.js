@@ -94,7 +94,7 @@ function closeModal(){ ui.modal = null; render(); }
 function renderModal(){
   const { def, dados, id, tabela } = ui.modal;
   return `
-  <div class="modal-overlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal-overlay">
     <div class="modal">
       <h3>${id? 'Editar' : 'Novo'} — ${def.titulo}</h3>
       <div class="modal-sub">${def.subtitulo||''}</div>
