@@ -7,7 +7,6 @@ function renderClientes(){
 
 function renderProcessos(){
   const extras = [
-    { label:'Valor Fech. Câmbio (R$)', render: p => { const v=procValorFechCambioRS(p); return v===null? '<span class="small-muted">Em aberto</span>' : `<span class="mono">${fmtMoney(v)}</span>`; } },
     { label:'A Receber Est. (USD)', render: p => { const v=procAReceberEstUSD(p); return v===null? '—' : `<span class="mono">US$ ${fmtNum(v)}</span>`; } },
   ];
   const def = TABLE_DEFS.processos;

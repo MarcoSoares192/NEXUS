@@ -154,7 +154,10 @@ async function salvarModal(){
   try{
     let salvo;
     if(id){
-      salvo = await dbAtualizar(tabelaReal, id, novo);
+      const idxAtual = state[tabelaReal].findIndex(r=>r.id===id);
+      // mantém campos que não aparecem no formulário (ex.: ref, vencimento, conta bancária)
+      const completo = Object.assign({}, state[tabelaReal][idxAtual], novo);
+      salvo = await dbAtualizar(tabelaReal, id, completo);
       const idx = state[tabelaReal].findIndex(r=>r.id===id);
       state[tabelaReal][idx] = salvo;
     } else {
@@ -215,6 +218,15 @@ async function excluirLinha(tabela, id){
 }
 
 let uiFiltros = {}; // { tabela: { colKey: valor } }
+const FILTRO_VAZIO = '__VAZIO__';
+// célula "vazia" = sem valor; processos marcados SEM DUE não contam como vazios nas colunas de câmbio/valor CH
+function celulaVazia(c, r){
+  const v = r[c.key];
+  const vazio = v===''||v===null||v===undefined;
+  if(!vazio) return false;
+  if((c.key==='valorMoeda'||c.key==='valorCambio'||c.key==='dataFechCambio') && r.valorMoedaSemDue) return false;
+  return true;
+}
 
 function aplicarFiltroColuna(tabela, key, valor){
   (uiFiltros[tabela] ||= {})[key] = valor;
@@ -245,6 +257,7 @@ function linhasComFiltro(tabela, colunas, linhas){
     const c = colunas.find(x=>x.key===key);
     const f = filtros[key];
     if(!c) return true;
+    if(f===FILTRO_VAZIO) return celulaVazia(c, r);
     if(c.type==='select' || c.type==='clienteSelect') return String(r[key]||'')===f;
     return String(r[key]||'').toLowerCase().includes(f.toLowerCase());
   }));
@@ -266,7 +279,11 @@ function renderFiltroCelula(tabela, c, linhasBase){
       ${comNome.map(o=>`<option value="${o.id}" ${atual===o.id?'selected':''}>${esc(o.nome)}</option>`).join('')}
     </select>`;
   }
-  return `<input type="text" id="filtro_${tabela}_${c.key}" placeholder="Buscar..." value="${esc(atual)}" oninput="aplicarFiltroColuna('${tabela}','${c.key}',this.value)" class="filtro-input">`;
+  const vazioAtivo = atual===FILTRO_VAZIO;
+  const input = `<input type="text" id="filtro_${tabela}_${c.key}" placeholder="Buscar..." value="${vazioAtivo?'':esc(atual)}" ${vazioAtivo?'disabled':''} oninput="aplicarFiltroColuna('${tabela}','${c.key}',this.value)" class="filtro-input">`;
+  if(!c.filtroVazio) return input;
+  return input + `<label style="display:flex;align-items:center;gap:4px;margin-top:4px;font-size:11px;font-weight:600;color:#6b7280;text-transform:none;letter-spacing:0;cursor:pointer;">
+    <input type="checkbox" id="filtroVazio_${tabela}_${c.key}" ${vazioAtivo?'checked':''} onchange="aplicarFiltroColuna('${tabela}','${c.key}',this.checked?FILTRO_VAZIO:'')"> Vazio</label>`;
 }
 
 function renderCrudTable(tabela, colunasExtras){
@@ -364,11 +381,11 @@ const TABLE_DEFS = {
       {key:'clienteId', label:'Cliente', type:'clienteSelect', obrigatorio:true},
       {key:'descricao', label:'Descrição', type:'text'},
       {key:'dataAbertura', label:'Data Abertura', type:'date'},
-      {key:'dataEmbarque', label:'Data Embarque', type:'date'},
+      {key:'dataEmbarque', label:'Data Embarque', type:'date', filtroVazio:true},
       {key:'moeda', label:'Moeda', type:'select', options:MOEDAS_PROC},
       {key:'valorNexus', label:'Valor NEXUS (US$)', type:'moeda', moedaSimbolo:'US$'},
-      {key:'valorMoeda', label:'Valor CH', type:'moedaOuSemDue', moedaSimbolo:'US$'},
-      {key:'valorCambio', label:'Valor Câmbio (R$)', type:'moeda', moedaSimbolo:'R$',
+      {key:'valorMoeda', label:'Valor CH', type:'moedaOuSemDue', moedaSimbolo:'US$', filtroVazio:true},
+      {key:'valorCambio', label:'Valor Câmbio (R$)', type:'moeda', moedaSimbolo:'R$', filtroVazio:true,
         alertaSe: r => !r.valorMoedaSemDue && (r.valorCambio===null||r.valorCambio===undefined||r.valorCambio==='')},
       {key:'dataFechCambio', label:'Data Fech. Câmbio', type:'date'},
       {key:'statusRecebimento', label:'Status Recebimento', type:'select', options:STATUS_RECEBIMENTO_PROC,
@@ -435,13 +452,9 @@ const TABLE_DEFS = {
       {key:'processoNumero', label:'Nº Processo', type:'processoSelect'},
       {key:'empresa', label:'Empresa', type:'select', options:EMPRESAS},
       {key:'clienteId', label:'Cliente', type:'clienteSelect'},
-      {key:'ref', label:'Ref (Proforma/INV)', type:'text'},
       {key:'moeda', label:'Moeda', type:'select', options:MOEDAS_CAR},
-      {key:'valor', label:'Valor', type:'moeda', moedaSimbolo:'', obrigatorio:true},
-      {key:'vencimento', label:'Vencimento', type:'date'},
+      {key:'valor', label:'Valor', type:'moeda', moedaSimbolo:'US$', obrigatorio:true},
       {key:'dataRecebimento', label:'Data Recebimento', type:'date'},
-      {key:'valorRecebido', label:'Valor Recebido', type:'moeda', moedaSimbolo:''},
-      {key:'contaBancariaId', label:'Conta Bancária (recebimento)', type:'contaBancariaSelect'},
     ]
   },
   contasPagar: {

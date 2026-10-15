@@ -7,7 +7,6 @@ function renderContasReceber(){
   MOEDAS_CAR.forEach(m=> porMoeda[m] = linhas.filter(r=>r.moeda===m && !r.dataRecebimento).reduce((s,r)=>s+(carSaldoAberto(r)||0),0));
   const extras = [
     { label:'Saldo em Aberto', render: r => { const v=carSaldoAberto(r); return v===null?'—': `<span class="mono">${fmtNum(v)}</span>`; } },
-    { label:'Dias Atraso', render: r => { const v=carDiasAtraso(r); return v===null?'—': v; } },
     { label:'Status', render: r => badge(carStatus(r), carStatusBadge(carStatus(r))) },
   ];
   return `
