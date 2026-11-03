@@ -56,8 +56,11 @@ function renderDashboard(){
   const receitaTotalNexusUSD = state.processos.reduce((s,p)=>s+(Number(p.valorNexus)||0),0);
   const recebidoNexusUSD = state.processos.filter(p=>statusRecebido.includes(p.statusRecebimento)).reduce((s,p)=>s+(Number(p.valorNexus)||0),0);
   const aReceberNexusUSD = state.processos.filter(p=>statusAReceber.includes(p.statusRecebimento)).reduce((s,p)=>s+(Number(p.valorNexus)||0),0);
-  const despesasNexusTodas = state.despesas.filter(d=>d.empresa==='NEXUS').reduce((s,d)=>s+(Number(d.valorPago)||0),0);
-  const capNexusManualAberto = state.contasPagar.filter(c=>c.empresa==='NEXUS' && !c.despesaId && !c.despAdmId && !c.dataPagamento).reduce((s,c)=>s+(Number(c.valor)||0),0);
+  const CC_RETIRADA = 'RETIRADA DE LUCRO';
+  const retiradaLucroNexusUSD = state.despesas.filter(d=>d.empresa==='NEXUS' && d.centroCusto===CC_RETIRADA).reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  // Lucro = Receita − despesas NEXUS, sem contar Retirada de Lucro (que é distribuição, não despesa operacional)
+  const despesasNexusTodas = state.despesas.filter(d=>d.empresa==='NEXUS' && d.centroCusto!==CC_RETIRADA).reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  const capNexusManualAberto = state.contasPagar.filter(c=>c.empresa==='NEXUS' && c.centroCusto!==CC_RETIRADA && !c.despesaId && !c.despAdmId && !c.dataPagamento).reduce((s,c)=>s+(Number(c.valor)||0),0);
   const totalDespesasNexusUSD = despesasNexusTodas + capNexusManualAberto;
   const lucroBrutoNexusUSD = receitaTotalNexusUSD - totalDespesasNexusUSD;
   const impostoPrevistoNexusUSD = Math.max(0, lucroBrutoNexusUSD) * 0.18;
@@ -78,10 +81,10 @@ function renderDashboard(){
     ${kpiCard('Receita Total', 'US$ '+fmtNum(receitaTotalNexusUSD), '', 'var(--accent)')}
     ${kpiCard('Recebido', 'US$ '+fmtNum(recebidoNexusUSD), 'Status Recebido Total/Parcial', 'var(--green)')}
     ${kpiCard('A Receber', 'US$ '+fmtNum(aReceberNexusUSD), 'Status Pendente/Em Atraso', 'var(--amber)')}
-    ${kpiCard('Lucro', 'US$ '+fmtNum(lucroBrutoNexusUSD), 'Receita − despesas (NEXUS)', 'var(--accent2)')}
+    ${kpiCard('Lucro', 'US$ '+fmtNum(lucroBrutoNexusUSD), 'Receita − despesas NEXUS (sem Retirada de Lucro)', 'var(--accent2)')}
   </div>
   <div class="grid grid-4" style="margin-bottom:18px;">
-    ${kpiCard('Nº Processos', state.processos.length, '', 'var(--slate)')}
+    ${kpiCard('Retirada de Lucro', 'US$ '+fmtNum(retiradaLucroNexusUSD), 'Despesas NEXUS — centro de custo Retirada de Lucro', 'var(--slate)')}
     ${kpiCard('Imposto Previsto', 'US$ '+fmtNum(impostoPrevistoNexusUSD), '18% sobre o Lucro', 'var(--amber)')}
     ${kpiCard('Saldo HELM BANK', contaHelmBank? 'US$ '+fmtNum(saldoContaBancaria(contaHelmBank)) : '—', contaHelmBank?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
     ${kpiCard('Saldo BB Américas', contaBBAmericas? 'US$ '+fmtNum(saldoContaBancaria(contaBBAmericas)) : '—', contaBBAmericas?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
