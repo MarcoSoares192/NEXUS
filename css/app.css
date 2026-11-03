@@ -111,3 +111,8 @@ tr.row-warn td:first-child{border-left:3px solid #d97706;}
 /* Linha de filtro por coluna (estilo Excel) */
 tr.filtro-row th{padding:4px 6px;background:#f9fafb;}
 .filtro-input{width:100%;box-sizing:border-box;font-size:11px;padding:3px 5px;border:1px solid #d1d5db;border-radius:5px;font-weight:400;text-transform:none;letter-spacing:normal;color:#111827;}
+
+.kpi-compact .kpi{padding:11px 14px;}
+.kpi-compact .kpi .label{font-size:10.5px;}
+.kpi-compact .kpi .value{font-size:18px;margin-top:4px;}
+.kpi-compact .kpi .sub{font-size:11px;margin-top:4px;}

@@ -219,6 +219,8 @@ async function excluirLinha(tabela, id){
 
 let uiFiltros = {}; // { tabela: { colKey: valor } }
 const FILTRO_VAZIO = '__VAZIO__';
+const MESES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function semAcento(t){ return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 // célula "vazia" = sem valor; processos marcados SEM DUE não contam como vazios nas colunas de câmbio/valor CH
 function celulaVazia(c, r){
   const v = r[c.key];
@@ -260,6 +262,15 @@ function linhasComFiltro(tabela, colunas, linhas){
     if(f===FILTRO_VAZIO) return celulaVazia(c, r);
     if(c.type==='select' || c.type==='clienteSelect') return String(r[key]||'')===f;
     // datas: busca pelo formato exibido (dd/mm/aaaa); valores em moeda: pelo valor formatado (ex.: 18.900,00)
+    if(c.type==='date' && /^[a-zçã]+([\s\/\-]*\d{0,4})?$/i.test(f.trim()) && /[a-zç]/i.test(f)){
+      // busca por nome do mês: "ago" -> agosto; aceita ano opcional ("ago 2026")
+      const m = /^([a-zçã]+)[\s\/\-]*(\d{0,4})$/i.exec(f.trim());
+      const nome = semAcento(m[1]);
+      if(!r[key]) return false;
+      const d = parseDate(r[key]); if(!d) return false;
+      const mesOk = semAcento(MESES_PT[d.getMonth()]).startsWith(nome);
+      return mesOk && (!m[2] || String(d.getFullYear()).startsWith(m[2]));
+    }
     let texto = String(r[key]===null||r[key]===undefined ? '' : r[key]);
     if(c.type==='date' && r[key]) texto += ' ' + fmtDate(r[key]);
     if((c.type==='moeda'||c.type==='moedaOuSemDue') && r[key]!==''&&r[key]!==null&&r[key]!==undefined && !isNaN(r[key])) texto += ' ' + fmtMoedaMascara(Number(r[key]).toFixed(2));

@@ -60,6 +60,7 @@ function renderDashboard(){
   const capNexusManualAberto = state.contasPagar.filter(c=>c.empresa==='NEXUS' && !c.despesaId && !c.despAdmId && !c.dataPagamento).reduce((s,c)=>s+(Number(c.valor)||0),0);
   const totalDespesasNexusUSD = despesasNexusTodas + capNexusManualAberto;
   const lucroBrutoNexusUSD = receitaTotalNexusUSD - totalDespesasNexusUSD;
+  const impostoPrevistoNexusUSD = Math.max(0, lucroBrutoNexusUSD) * 0.18;
   const contaHelmBank = state.contasBancarias.find(c=>c.empresa==='NEXUS' && /helm/i.test(c.nome));
   const contaBBAmericas = state.contasBancarias.find(c=>c.empresa==='NEXUS' && /bb\s*am/i.test(c.nome));
 
@@ -71,14 +72,17 @@ function renderDashboard(){
   const contaBancoDoBrasil = state.contasBancarias.find(c=>c.empresa==='CHALLENGE' && /banco do brasil/i.test(c.nome));
 
   return `
+  <div class="kpi-compact">
   <div class="section-title">NEXUS (US$)</div>
-  <div class="grid grid-3" style="margin-bottom:10px;">
+  <div class="grid grid-4" style="margin-bottom:10px;">
     ${kpiCard('Receita Total', 'US$ '+fmtNum(receitaTotalNexusUSD), '', 'var(--accent)')}
     ${kpiCard('Recebido', 'US$ '+fmtNum(recebidoNexusUSD), 'Status Recebido Total/Parcial', 'var(--green)')}
     ${kpiCard('A Receber', 'US$ '+fmtNum(aReceberNexusUSD), 'Status Pendente/Em Atraso', 'var(--amber)')}
+    ${kpiCard('Lucro', 'US$ '+fmtNum(lucroBrutoNexusUSD), 'Receita − despesas (NEXUS)', 'var(--accent2)')}
   </div>
-  <div class="grid grid-3" style="margin-bottom:18px;">
-    ${kpiCard('Lucro Bruto', 'US$ '+fmtNum(lucroBrutoNexusUSD), 'Receita − despesas pagas e a pagar (NEXUS)', 'var(--accent2)')}
+  <div class="grid grid-4" style="margin-bottom:18px;">
+    ${kpiCard('Nº Processos', state.processos.length, '', 'var(--slate)')}
+    ${kpiCard('Imposto Previsto', 'US$ '+fmtNum(impostoPrevistoNexusUSD), '18% sobre o Lucro', 'var(--amber)')}
     ${kpiCard('Saldo HELM BANK', contaHelmBank? 'US$ '+fmtNum(saldoContaBancaria(contaHelmBank)) : '—', contaHelmBank?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
     ${kpiCard('Saldo BB Américas', contaBBAmericas? 'US$ '+fmtNum(saldoContaBancaria(contaBBAmericas)) : '—', contaBBAmericas?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
   </div>
@@ -138,6 +142,7 @@ function renderDashboard(){
       `).join('') || `<tr><td colspan="7" style="text-align:center;color:#9ca3af;">Sem dados</td></tr>`}
     </tbody>
   </table></div>
+  </div>
   `;
 }
 
