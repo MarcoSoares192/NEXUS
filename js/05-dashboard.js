@@ -67,10 +67,30 @@ function renderDashboard(){
   const contaHelmBank = state.contasBancarias.find(c=>c.empresa==='NEXUS' && /helm/i.test(c.nome));
   const contaBBAmericas = state.contasBancarias.find(c=>c.empresa==='NEXUS' && /bb\s*am/i.test(c.nome));
 
+  // ---------- Detalhamento por cliente: NEXUS em US$; margem = consolidada (NEXUS + CHALLENGE) ----------
+  const grupoPorProc = {}; calcResultadoGrupoPorProcesso().forEach(r=>{ grupoPorProc[r.numero]=r; });
+  const mapaClientes = {};
+  state.processos.forEach(p=>{
+    const nome = clienteNome(p.clienteId);
+    const g = mapaClientes[nome] || (mapaClientes[nome] = { cliente:nome, proc:0, receita:0, recebido:0, aReceber:0, despesas:0, consolNum:0, consolDen:0 });
+    const v = Number(p.valorNexus)||0;
+    g.proc++; g.receita += v;
+    if(statusRecebido.includes(p.statusRecebimento)) g.recebido += v;
+    if(statusAReceber.includes(p.statusRecebimento)) g.aReceber += v;
+    g.despesas += state.despesas.filter(d=>d.processoNumero===p.numero && d.empresa==='NEXUS' && d.centroCusto!==CC_RETIRADA).reduce((x,d)=>x+(Number(d.valorPago)||0),0);
+    const gr = grupoPorProc[p.numero];
+    if(gr && gr.resultadoNexusUSD!==null && gr.valorNexus>0){ g.consolNum += gr.resultadoNexusUSD; g.consolDen += gr.valorNexus; }
+  });
+  const clientesNexus = Object.values(mapaClientes).map(g=>({ ...g, lucro: g.receita-g.despesas, margem: g.consolDen>0 ? g.consolNum/g.consolDen : null })).sort((a,b)=>b.receita-a.receita);
+  const clientesNexusFiltrados = ui.dashClienteFiltro==='TODOS' ? clientesNexus : clientesNexus.filter(c=>c.cliente===ui.dashClienteFiltro);
+
   // ---------- Bloco CHALLENGE / Banco do Brasil (R$) ----------
   const receitaTotalChallengeRS = state.processos.reduce((s,p)=>{ const v=procValorFechCambioRS(p); return s+(v||0); },0);
   const aReceberSemCambioFechado = state.processos.filter(p=>!p.dataFechCambio).reduce((s,p)=>s+(Number(p.valorMoeda)||0),0);
   const despesasPagasChallengeRS = state.despesas.filter(d=>d.empresa==='CHALLENGE' && d.status==='Pago').reduce((s,d)=>s+(Number(d.valorPago)||0),0);
+  const despesasAPagarChallengeRS =
+    state.despesas.filter(d=>d.empresa==='CHALLENGE' && d.status!=='Pago').reduce((s,d)=>s+(Number(d.valorPago)||0),0) +
+    state.contasPagar.filter(c=>c.empresa==='CHALLENGE' && !c.despesaId && !c.despAdmId && !c.dataPagamento).reduce((s,c)=>s+(Number(c.valor)||0),0);
   const lucroBrutoChallengeRS = receitaTotalChallengeRS - despesasPagasChallengeRS;
   const contaBancoDoBrasil = state.contasBancarias.find(c=>c.empresa==='CHALLENGE' && /banco do brasil/i.test(c.nome));
 
@@ -91,15 +111,40 @@ function renderDashboard(){
   </div>
 
   <div class="section-title">CHALLENGE — Banco do Brasil (R$)</div>
-  <div class="grid grid-3" style="margin-bottom:10px;">
+  <div class="grid grid-4" style="margin-bottom:10px;">
     ${kpiCard('Receita Total', fmtMoney(receitaTotalChallengeRS), '', 'var(--accent)')}
     ${kpiCard('A Receber (câmbio ainda não fechado)', fmtNum(aReceberSemCambioFechado)+' (moeda original)', '', 'var(--amber)')}
     ${kpiCard('Despesas Pagas', fmtMoney(despesasPagasChallengeRS), '', 'var(--slate)')}
+    ${kpiCard('Despesas a Pagar', fmtMoney(despesasAPagarChallengeRS), 'Despesas CH não pagas + contas a pagar manuais', 'var(--red, #dc2626)')}
   </div>
   <div class="grid grid-2" style="margin-bottom:18px;">
     ${kpiCard('Lucro Bruto', fmtMoney(lucroBrutoChallengeRS), '', 'var(--accent2)')}
     ${kpiCard('Saldo Banco do Brasil', contaBancoDoBrasil? fmtMoney(saldoContaBancaria(contaBancoDoBrasil)) : '—', contaBancoDoBrasil?'':'Cadastre a conta em Contas Bancárias', 'var(--green)')}
   </div>
+
+  <div class="section-title">Detalhamento por Cliente (NEXUS — US$)</div>
+  <div style="display:flex;gap:10px;margin-bottom:12px;">
+    <select onchange="ui.dashClienteFiltro=this.value; render();" style="padding:7px 10px;border-radius:8px;border:1px solid #d1d5db;font-size:12.5px;">
+      <option value="TODOS">Todos os clientes</option>
+      ${clientesNexus.map(c=>`<option value="${esc(c.cliente)}" ${ui.dashClienteFiltro===c.cliente?'selected':''}>${esc(c.cliente)}</option>`).join('')}
+    </select>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Cliente</th><th>Proc.</th><th class="text-right">Receita (US$)</th><th class="text-right">Recebido (US$)</th><th class="text-right">A Receber (US$)</th><th class="text-right">Lucro (US$)</th><th class="text-right" title="Margem consolidada NEXUS + CHALLENGE">Margem</th></tr></thead>
+    <tbody>
+      ${clientesNexusFiltrados.map(c=>`
+        <tr>
+          <td><b>${esc(c.cliente)}</b></td>
+          <td>${c.proc}</td>
+          <td class="text-right mono">US$ ${fmtNum(c.receita)}</td>
+          <td class="text-right mono">US$ ${fmtNum(c.recebido)}</td>
+          <td class="text-right mono">US$ ${fmtNum(c.aReceber)}</td>
+          <td class="text-right mono">US$ ${fmtNum(c.lucro)}</td>
+          <td class="text-right">${c.margem===null?'—':fmtPct(c.margem)}</td>
+        </tr>
+      `).join('') || `<tr><td colspan="7" style="text-align:center;color:#9ca3af;">Sem dados</td></tr>`}
+    </tbody>
+  </table></div>
 
   <div class="section-title">Resumo Geral do Grupo</div>
   <div class="grid grid-5">
@@ -122,29 +167,6 @@ function renderDashboard(){
     <div class="card"><canvas id="chartPagamentosMes" height="140"></canvas></div>
   </div>
 
-  <div class="section-title">Detalhamento por Cliente</div>
-  <div style="display:flex;gap:10px;margin-bottom:12px;">
-    <select onchange="ui.dashClienteFiltro=this.value; render();" style="padding:7px 10px;border-radius:8px;border:1px solid #d1d5db;font-size:12.5px;">
-      <option value="TODOS">Todos os clientes</option>
-      ${Object.keys(porCliente).map(c=>`<option value="${esc(c)}" ${ui.dashClienteFiltro===c?'selected':''}>${esc(c)}</option>`).join('')}
-    </select>
-  </div>
-  <div class="table-wrap"><table>
-    <thead><tr><th>Cliente</th><th>Proc.</th><th class="text-right">Receita</th><th class="text-right">Recebido</th><th class="text-right">A Receber</th><th class="text-right">Lucro</th><th class="text-right">Margem</th></tr></thead>
-    <tbody>
-      ${clientesArr.map(c=>`
-        <tr>
-          <td><b>${esc(c.cliente)}</b></td>
-          <td>${c.proc}</td>
-          <td class="text-right mono">${fmtMoney(c.receita)}</td>
-          <td class="text-right mono">${fmtMoney(c.recebido)}</td>
-          <td class="text-right mono">US$ ${fmtNum(c.aReceber)}</td>
-          <td class="text-right mono">${fmtMoney(c.lucro)}</td>
-          <td class="text-right">${fmtPct(c.receita? c.lucro/c.receita:0)}</td>
-        </tr>
-      `).join('') || `<tr><td colspan="7" style="text-align:center;color:#9ca3af;">Sem dados</td></tr>`}
-    </tbody>
-  </table></div>
   </div>
   `;
 }
